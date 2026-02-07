@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { getProducts, createProduct } = require('../controllers/companyController'); // Reusing controller for now
+const { createProduct, getProducts, getProduct, updateProduct, deleteProduct } = require('../controllers/productController');
 const { protect } = require('../middlewares/authMiddleware');
+const { checkRole } = require('../middlewares/roleMiddleware');
 
 router.use(protect);
 
+router.post('/', checkRole(['manage_products', 'admin']), createProduct);
 router.get('/', getProducts);
-router.post('/', createProduct);
+router.get('/:id', getProduct);
+router.put('/:id', checkRole(['manage_products', 'admin']), updateProduct);
+router.delete('/:id', checkRole(['manage_products', 'admin']), deleteProduct);
 
 module.exports = router;

@@ -45,28 +45,47 @@ Node.js Backend for Multi-Company Supply Chain Optimization System.
    npm run dev
    ```
 
-## API Endpoints
+## API Endpoints (v1)
+
+Base URL: `/api/v1`
 
 ### Auth
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/register` - Register user (Admin)
+- `POST /auth/login` - Login
+- `POST /auth/register` - Register User (Admin)
+- `GET /auth/profile` - Get User Profile
+
+### Company & Roles
+- `POST /companies` - Create Company
+- `GET /companies/:id` - Get Company
+- `POST /roles` - Create Role
+- `GET /roles` - List Roles
+
+### Locations & Products
+- `POST /locations` - Create Location
+- `GET /locations` - List Locations
+- `POST /products` - Create Product
+- `GET /products` - List Products
 
 ### Inventory
-- `GET /api/inventory?locationId=...` - Get inventory
-- `POST /api/inventory/update` - Update stock (production/transfer)
+- `POST /inventory` - Add Stock
+- `GET /inventory/location/:id` - Get Location Stock
+- `POST /inventory/transfer` - Transfer Stock
+- `GET /inventory/movements` - Movement History
 
-### Orders
-- `POST /api/orders` - Create order
-- `GET /api/orders` - List orders
-- `PUT /api/orders/:id/status` - Update status (ship/deliver)
+### Orders & Shipments
+- `POST /orders/dealer` - Dealer Order
+- `POST /orders/customer` - Customer Order
+- `GET /orders` - List Orders
+- `POST /shipments` - Create Shipment
+- `PUT /shipments/:id/status` - Update Shipment Status
 
-### AI
-- `POST /api/ai/forecast` - Get demand forecast
-- `GET /api/ai/recommendations?locationId=...` - Get stock recommendations
+### AI & Analytics
+- `POST /ai/forecast` - Trigger Demand Forecast
+- `GET /ai/forecasts` - Get Forecast History
+- `GET /analytics/sales` - Sales Summary
+- `GET /analytics/imbalances` - Stock Imbalances
 
-## Project Structure
-- `src/models`: Database schemas
-- `src/controllers`: Request handlers
-- `src/services`: Business logic (Inventory reservation, AI calls)
-- `src/routes`: API definitions
-- `src/middlewares`: Auth and Error handling
+## Postman Collection
+Import `postman_collection.json` into Postman to test the APIs.
+Set the `token` variable in your environment after login.
+

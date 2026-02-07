@@ -1,56 +1,61 @@
 const Company = require('../models/Company');
-const Location = require('../models/Location');
-const Product = require('../models/Product');
+const AppError = require('../utils/AppError');
+const User = require('../models/User');
+const Role = require('../models/Role');
 
 const createCompany = async (req, res, next) => {
   try {
-    const company = await Company.create(req.body);
-    res.status(201).json(company);
+    const { name, address, contactEmail, phone, adminEmail, adminPassword, adminName } = req.body;
+    
+    if (!name || !adminEmail || !adminPassword) {
+        throw new AppError('Company name and Admin details are required', 400);
+    }
+
+    // 1. Create Company
+    const company = await Company.create({
+      name,
+      address,
+      contactEmail,
+      phone
+    });
+
+    // 2. Create Admin Role for this company
+    const adminRole = await Role.create({
+        name: 'Company Admin',
+        permissions: ['all'],
+        companyId: company._id,
+        isSystemRole: true
+    });
+
+    // 3. Create Admin User
+    const adminUser = await User.create({
+        name: adminName || 'Admin',
+        email: adminEmail,
+        password: adminPassword,
+        role: adminRole._id,
+        companyId: company._id
+    });
+
+    res.status(201).json({ company, adminUser });
   } catch (error) {
     next(error);
   }
 };
 
-const getLocations = async (req, res, next) => {
+const getCompany = async (req, res, next) => {
   try {
-    const locations = await Location.find({ companyId: req.user.companyId });
-    res.json(locations);
+    const company = await Company.findById(req.params.id);
+    if (!company) throw new AppError('Company not found', 404);
+    
+    // Security check: only allow own company unless super admin
+    if (req.user.companyId.toString() !== req.params.id && req.user.role.name !== 'Super Admin') {
+        throw new AppError('Not authorized to view this company', 403);
+    }
+
+    res.json(company);
   } catch (error) {
     next(error);
   }
 };
 
-const createLocation = async (req, res, next) => {
-  try {
-    const location = await Location.create({ ...req.body, companyId: req.user.companyId });
-    res.status(201).json(location);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getProducts = async (req, res, next) => {
-  try {
-    const products = await Product.find({ companyId: req.user.companyId });
-    res.json(products);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const createProduct = async (req, res, next) => {
-  try {
-    const product = await Product.create({ ...req.body, companyId: req.user.companyId });
-    res.status(201).json(product);
-  } catch (error) {
-    next(error);
-  }
-};
-
-module.exports = {
-  createCompany,
-  getLocations,
-  createLocation,
-  getProducts,
-  createProduct
-};
+module.exports = { createCompany, getCompany };

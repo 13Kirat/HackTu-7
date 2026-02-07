@@ -10,9 +10,8 @@ const inventorySchema = new mongoose.Schema({
   reorderLevel: { type: Number, default: 10 }
 }, { timestamps: true });
 
-inventorySchema.pre('save', function(next) {
+inventorySchema.pre('save', function() {
   this.availableStock = this.totalStock - this.reservedStock;
-  next();
 });
 
 // Ensure one inventory record per product per location
