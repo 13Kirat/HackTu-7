@@ -57,6 +57,16 @@ const seedData = async () => {
         name: 'Buyer', 
         permissions: ['create_order', 'view_products'], 
         companyId: company._id 
+      },
+      { 
+        name: 'Retailer', 
+        permissions: ['create_order', 'view_products'], 
+        companyId: company._id 
+      },
+      { 
+        name: 'Contractor', 
+        permissions: ['create_order', 'view_products'], 
+        companyId: company._id 
       }
     ];
     const roles = await Role.insertMany(rolesData);
@@ -66,27 +76,40 @@ const seedData = async () => {
     const factoryRole = roles.find(r => r.name === 'Factory Manager');
     const dealerRole = roles.find(r => r.name === 'Dealer');
     const buyerRole = roles.find(r => r.name === 'Buyer');
+    const retailerRole = roles.find(r => r.name === 'Retailer');
+    const contractorRole = roles.find(r => r.name === 'Contractor');
 
     // 4. Create Locations
     const factory = await Location.create({
       name: 'Main Manufacturing Plant',
       type: 'factory',
       address: 'Industrial Zone East, SF',
-      companyId: company._id
+      companyId: company._id,
+      coordinates: { lat: 37.7749, lng: -122.4194 }
     });
 
     const warehouse = await Location.create({
       name: 'Regional Distribution Hub',
       type: 'warehouse',
       address: 'Logistics Park South, SF',
-      companyId: company._id
+      companyId: company._id,
+      coordinates: { lat: 37.7833, lng: -122.4167 }
     });
 
-    const dealerLoc = await Location.create({
-      name: 'Elite Electronics Retail',
+    const dealerLoc1 = await Location.create({
+      name: 'Elite Electronics Retail - North',
       type: 'dealer',
       address: 'Downtown Shopping Center, SF',
-      companyId: company._id
+      companyId: company._id,
+      coordinates: { lat: 37.7949, lng: -122.4094 }
+    });
+
+    const dealerLoc2 = await Location.create({
+        name: 'Elite Electronics Retail - South',
+        type: 'dealer',
+        address: 'Bayview District, SF',
+        companyId: company._id,
+        coordinates: { lat: 37.7349, lng: -122.3894 }
     });
     console.log('Locations created');
 
@@ -113,14 +136,25 @@ const seedData = async () => {
         password: 'password123',
         role: dealerRole._id,
         companyId: company._id,
-        locationId: dealerLoc._id
+        locationId: dealerLoc1._id
       },
       {
         name: 'Alice Buyer',
         email: 'buyer@example.com',
         password: 'password123',
         role: buyerRole._id,
-        companyId: company._id
+        companyId: company._id,
+        address: 'Sunset District, SF',
+        coordinates: { lat: 37.7549, lng: -122.4794 } // Closer to dealerLoc1? Let's check.
+      },
+      {
+        name: 'Bob Retailer',
+        email: 'retailer@example.com',
+        password: 'password123',
+        role: retailerRole._id,
+        companyId: company._id,
+        address: 'Mission District, SF',
+        coordinates: { lat: 37.7599, lng: -122.4148 }
       }
     ];
 
@@ -150,14 +184,24 @@ const seedData = async () => {
       reorderLevel: 50
     }));
 
-    const dealerInventory = products.map(p => ({
+    const dealerInventory1 = products.map(p => ({
       productId: p._id,
-      locationId: dealerLoc._id,
+      locationId: dealerLoc1._id,
       companyId: company._id,
       totalStock: 50,
       reservedStock: 0,
       availableStock: 50,
       reorderLevel: 20
+    }));
+
+    const dealerInventory2 = products.map(p => ({
+        productId: p._id,
+        locationId: dealerLoc2._id,
+        companyId: company._id,
+        totalStock: 75,
+        reservedStock: 0,
+        availableStock: 75,
+        reorderLevel: 25
     }));
 
     const factoryInventory = products.map(p => ({
@@ -170,8 +214,8 @@ const seedData = async () => {
         reorderLevel: 100
     }));
 
-    await Inventory.insertMany([...factoryInventory, ...warehouseInventory, ...dealerInventory]);
-    console.log('Inventory initialized across factory, warehouse, and dealer');
+    await Inventory.insertMany([...factoryInventory, ...warehouseInventory, ...dealerInventory1, ...dealerInventory2]);
+    console.log('Inventory initialized across factory, warehouse, and dealers');
 
     // 8. Create Sample Orders for analytics (last 30 days)
     const Order = require('./src/models/Order');
@@ -186,8 +230,8 @@ const seedData = async () => {
             orderNumber: `SEED-ORD-${i}`,
             companyId: company._id,
             orderType: 'customer_order',
-            customerId: buyerRole._id, // Using role ID as placeholder if needed or specific user
-            fromLocationId: dealerLoc._id,
+            customerId: buyerRole._id, 
+            fromLocationId: dealerLoc1._id,
             items: [{
                 productId: products[i % 3]._id,
                 quantity: Math.floor(Math.random() * 10) + 1,

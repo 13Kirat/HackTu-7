@@ -38,6 +38,7 @@ app.use(`${apiPrefix}/coupons`, require('./src/routes/couponRoutes'));
 app.use(`${apiPrefix}/alerts`, require('./src/routes/alertRoutes'));
 app.use(`${apiPrefix}/analytics`, require('./src/routes/analyticsRoutes'));
 app.use(`${apiPrefix}/ai`, require('./src/routes/aiRoutes'));
+app.use(`${apiPrefix}/buyer`, require('./src/routes/buyerRoutes'));
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', timestamp: new Date() });

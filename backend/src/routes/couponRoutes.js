@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createCoupon, getCoupons, applyCoupon, deleteCoupon } = require('../controllers/couponController');
+const { createCoupon, getCoupons, updateCoupon, applyCoupon, deleteCoupon } = require('../controllers/couponController');
 const { protect } = require('../middlewares/authMiddleware');
 const { checkRole } = require('../middlewares/roleMiddleware');
 

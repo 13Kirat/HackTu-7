@@ -9,6 +9,11 @@ const userSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
   locationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Location' }, // Optional link to specific factory/warehouse/dealer
   phone: { type: String },
+  address: { type: String },
+  coordinates: {
+    lat: Number,
+    lng: Number
+  },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
