@@ -139,19 +139,69 @@ const seedData = async () => {
     const products = await Product.insertMany(productsData);
     console.log('Products created');
 
-    // 7. Initialize Inventory at Factory
-    const inventoryData = products.map(p => ({
+    // 7. Initialize Inventory
+    const warehouseInventory = products.map(p => ({
       productId: p._id,
-      locationId: factory._id,
+      locationId: warehouse._id,
       companyId: company._id,
-      totalStock: 1000,
+      totalStock: 200,
       reservedStock: 0,
-      availableStock: 1000
+      availableStock: 200,
+      reorderLevel: 50
     }));
-    await Inventory.insertMany(inventoryData);
-    console.log('Inventory initialized');
 
-    // 8. Create a Coupon
+    const dealerInventory = products.map(p => ({
+      productId: p._id,
+      locationId: dealerLoc._id,
+      companyId: company._id,
+      totalStock: 50,
+      reservedStock: 0,
+      availableStock: 50,
+      reorderLevel: 20
+    }));
+
+    const factoryInventory = products.map(p => ({
+        productId: p._id,
+        locationId: factory._id,
+        companyId: company._id,
+        totalStock: 1000,
+        reservedStock: 0,
+        availableStock: 1000,
+        reorderLevel: 100
+    }));
+
+    await Inventory.insertMany([...factoryInventory, ...warehouseInventory, ...dealerInventory]);
+    console.log('Inventory initialized across factory, warehouse, and dealer');
+
+    // 8. Create Sample Orders for analytics (last 30 days)
+    const Order = require('./src/models/Order');
+    const ordersData = [];
+    const now = new Date();
+
+    for (let i = 0; i < 20; i++) {
+        const orderDate = new Date();
+        orderDate.setDate(now.getDate() - Math.floor(Math.random() * 30));
+        
+        ordersData.push({
+            orderNumber: `SEED-ORD-${i}`,
+            companyId: company._id,
+            orderType: 'customer_order',
+            customerId: buyerRole._id, // Using role ID as placeholder if needed or specific user
+            fromLocationId: dealerLoc._id,
+            items: [{
+                productId: products[i % 3]._id,
+                quantity: Math.floor(Math.random() * 10) + 1,
+                priceAtTime: products[i % 3].price
+            }],
+            totalAmount: products[i % 3].price * 5,
+            status: 'delivered',
+            createdAt: orderDate
+        });
+    }
+    await Order.insertMany(ordersData);
+    console.log('Sample delivered orders created for analytics');
+
+    // 9. Create a Coupon
     await Coupon.create({
         code: 'WELCOME20',
         companyId: company._id,

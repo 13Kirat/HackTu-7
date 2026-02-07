@@ -7,7 +7,8 @@ router.use(protect);
 
 router.post('/forecast', getDemandForecast);
 router.get('/forecasts', getForecasts);
-router.post('/recommendations', getStockRecommendation); // Changed to POST per prompt 14.3
+router.post('/replenishment', getStockRecommendation);
+ // Changed to POST per prompt 14.3
 router.get('/sales-trends', getSalesTrends);
 
 module.exports = router;

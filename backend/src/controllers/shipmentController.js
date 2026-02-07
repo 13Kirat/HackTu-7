@@ -1,5 +1,6 @@
 const Shipment = require('../models/Shipment');
 const Order = require('../models/Order');
+const orderService = require('../services/orderService');
 const AppError = require('../utils/AppError');
 
 const createShipment = async (req, res, next) => {
@@ -19,7 +20,7 @@ const createShipment = async (req, res, next) => {
         });
 
         // Update Order Status
-        order.status = 'processing';
+        order.status = 'confirmed';
         await order.save();
 
         res.status(201).json(shipment);
@@ -56,19 +57,9 @@ const updateShipmentStatus = async (req, res, next) => {
         shipment.status = status;
         if (status === 'delivered') {
             shipment.actualDelivery = Date.now();
-            
-            // Update Order to Delivered
-            const order = await Order.findById(shipment.orderId);
-            if (order) {
-                order.status = 'delivered';
-                await order.save();
-            }
+            await orderService.updateOrderStatus(req.user, shipment.orderId, 'delivered');
         } else if (status === 'in_transit') {
-            const order = await Order.findById(shipment.orderId);
-            if (order) {
-                order.status = 'shipped';
-                await order.save();
-            }
+            await orderService.updateOrderStatus(req.user, shipment.orderId, 'shipped');
         }
 
         await shipment.save();

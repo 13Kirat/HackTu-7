@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { loginUser, registerUser, getProfile } = require('../controllers/authController');
-const { protect, checkRole } = require('../middlewares/authMiddleware'); // Wait, checkRole is separate
+const { protect } = require('../middlewares/authMiddleware'); 
 const { checkRole: roleCheck } = require('../middlewares/roleMiddleware');
+const validate = require('../middlewares/validate');
+const { authSchemas } = require('../utils/validation');
 
-// Fix import structure if needed, or consolidate.
-// Assuming protect is in authMiddleware and checkRole is in roleMiddleware
-
-router.post('/login', loginUser);
+router.post('/login', validate(authSchemas.login), loginUser);
 router.post('/register', protect, roleCheck(['manage_users', 'admin']), registerUser);
 router.get('/profile', protect, getProfile);
 

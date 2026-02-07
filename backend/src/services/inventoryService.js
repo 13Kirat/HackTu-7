@@ -2,6 +2,7 @@ const Inventory = require('../models/Inventory');
 const InventoryMovement = require('../models/InventoryMovement');
 const Product = require('../models/Product');
 const AppError = require('../utils/AppError');
+const alertService = require('./alertService');
 
 const getInventory = async (companyId, locationId) => {
   const query = { companyId };
@@ -9,15 +10,30 @@ const getInventory = async (companyId, locationId) => {
   return await Inventory.find(query).populate('productId', 'name sku price');
 };
 
-const updateStock = async (user, productId, locationId, quantity, type, referenceId) => {
-  // quantity: positive to add, negative to remove (except for specific types we can enforce logic)
-  // Let's keep quantity absolute and use 'type' to determine sign.
-  
+const getCompanyInventory = async (companyId) => {
+  return await Inventory.aggregate([
+    { $match: { companyId } },
+    { $group: {
+        _id: '$productId',
+        totalStock: { $sum: '$totalStock' },
+        reservedStock: { $sum: '$reservedStock' },
+        availableStock: { $sum: '$availableStock' }
+    }},
+    { $lookup: {
+        from: 'products',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'product'
+    }},
+    { $unwind: '$product' }
+  ]);
+};
+
+const updateStock = async (user, productId, locationId, quantity, type, orderId = null, skipLogging = false, toLocationId = null) => {
   let inventory = await Inventory.findOne({ productId, locationId });
   
   if (!inventory) {
-    if (type === 'production' || type === 'transfer_in' || type === 'return') {
-      // Create if not exists only for adding stock
+    if (['manufacture', 'transfer', 'return', 'adjustment'].includes(type)) {
       inventory = new Inventory({
         productId,
         locationId,
@@ -31,59 +47,60 @@ const updateStock = async (user, productId, locationId, quantity, type, referenc
     }
   }
 
-  let change = 0;
-  
   switch (type) {
-    case 'production':
+    case 'manufacture':
     case 'return':
-    case 'adjustment_add':
-    case 'transfer_in':
-      change = quantity;
       inventory.totalStock += quantity;
       break;
     case 'sale':
-    case 'transfer_out':
-    case 'adjustment_sub':
       if (inventory.availableStock < quantity) {
         throw new AppError('Insufficient available stock', 400);
       }
-      change = -quantity;
       inventory.totalStock -= quantity;
       break;
+    case 'transfer':
+      if (quantity < 0 && inventory.availableStock < Math.abs(quantity)) {
+          throw new AppError('Insufficient stock for transfer', 400);
+      }
+      inventory.totalStock += quantity;
+      break;
+    case 'adjustment':
+      inventory.totalStock += quantity;
+      break;
     case 'reserve':
-        if (inventory.availableStock < quantity) {
-            throw new AppError('Insufficient stock to reserve', 400);
-        }
-        inventory.reservedStock += quantity;
-        change = 0; // Total stock doesn't change, just availability
-        break;
-    case 'fulfill_reservation':
-        // Reduces total and reserved
-        inventory.reservedStock -= quantity;
-        inventory.totalStock -= quantity;
-        change = -quantity;
-        break;
+      if (inventory.availableStock < quantity) {
+        throw new AppError('Insufficient stock to reserve', 400);
+      }
+      inventory.reservedStock += quantity;
+      break;
+    case 'release_reserve':
+      inventory.reservedStock -= Math.min(quantity, inventory.reservedStock);
+      break;
+    case 'fulfill_reserve':
+      inventory.reservedStock -= Math.min(quantity, inventory.reservedStock);
+      inventory.totalStock -= quantity;
+      break;
     default:
       throw new AppError('Invalid movement type', 400);
   }
 
-  // Recalculate available is done in pre-save hook of model, but good to be explicit or rely on hook
-  // inventory.availableStock = inventory.totalStock - inventory.reservedStock;
-  
   await inventory.save();
 
-  // Log movement
-  if (type !== 'reserve') { 
-      await InventoryMovement.create({
-        productId,
-        fromLocation: (type.includes('out') || type === 'sale' || type === 'fulfill_reservation') ? inventory.locationId : null,
-        toLocation: (type.includes('in') || type === 'production' || type === 'return' || type === 'adjustment_add') ? inventory.locationId : null,
-        quantity,
-        type,
-        referenceId,
-        companyId: user.companyId,
-        performedBy: user._id
-      });
+  // Check for alerts
+  alertService.checkAndTriggerAlerts(user.companyId, locationId, productId).catch(err => console.error('Alert trigger error:', err));
+
+  // Log movement for physical changes
+  if (!skipLogging && !['reserve', 'release_reserve'].includes(type)) {
+    await InventoryMovement.create({
+      productId,
+      fromLocationId: (type === 'sale' || type === 'fulfill_reserve') ? locationId : null,
+      toLocationId: (type === 'manufacture' || type === 'return') ? locationId : toLocationId,
+      quantity: Math.abs(quantity),
+      movementType: type === 'fulfill_reserve' ? 'sale' : type,
+      orderId,
+      companyId: user.companyId,
+      performedBy: user._id
+    });
   }
   
   return inventory;
@@ -94,20 +111,29 @@ const transferStock = async (user, productId, fromLocationId, toLocationId, quan
     throw new AppError('Cannot transfer to same location', 400);
   }
 
-  // 1. Deduct from Source
-  await updateStock(user, productId, fromLocationId, quantity, 'transfer_out');
+  // 1. Deduct from Source (Skip logging individual leg)
+  await updateStock(user, productId, fromLocationId, -quantity, 'transfer', null, true);
 
-  // 2. Add to Destination
-  await updateStock(user, productId, toLocationId, quantity, 'transfer_in'); // We need to handle 'transfer_in' in updateStock switch or map it
+  // 2. Add to Destination (Skip logging individual leg)
+  await updateStock(user, productId, toLocationId, quantity, 'transfer', null, true); 
   
-  // Note: updateStock logs movement. But here we have one logical transfer.
-  // The current updateStock implementation logs movement for each call.
-  // Ideally, we link them via referenceId.
+  // 3. Log single combined movement record
+  await InventoryMovement.create({
+    productId,
+    fromLocationId,
+    toLocationId,
+    quantity,
+    movementType: 'transfer',
+    companyId: user.companyId,
+    performedBy: user._id
+  });
+
   return { message: 'Transfer successful' };
 };
 
 module.exports = {
   getInventory,
+  getCompanyInventory,
   updateStock,
   transferStock
 };

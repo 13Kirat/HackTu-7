@@ -1,0 +1,389 @@
+ You are a senior backend architect. 
+ 
+Extend the existing Node.js + Express + MongoDB backend.
+
+Generate all APIs, controllers, services, and routes for the Dealer/Distributor portal.
+
+Tech stack:
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT authentication
+- Role-based authorization
+- Clean architecture (controller → service → model)
+
+Base API prefix:
+ /api/v1/dealer
+
+All routes must:
+- Be protected with JWT
+- Be accessible only to users with role: dealer
+- Have proper validation
+- Have error handling
+- Use async/await
+DEALER PORTAL FEATURES TO SUPPORT
+The APIs must support:
+
+Authorized dealer access only
+
+View stock availability
+
+View product pricing
+
+View schemes/coupons
+
+Dealer-to-dealer ordering
+
+Stock fulfillment orders
+
+Order tracking
+
+Dealer inventory management
+
+Sales history
+
+Low stock and high demand alerts
+
+1. DEALER AUTHORIZATION CHECK
+All dealer routes must use:
+
+authMiddleware
+roleMiddleware('dealer')
+2. DEALER DASHBOARD APIs
+2.1 Dealer Dashboard Summary
+GET /dashboard
+Description:
+Return summary data for dealer:
+- Total inventory value
+- Total products in stock
+- Pending orders
+- Low stock alerts
+- High demand alerts
+3. PRODUCT & AVAILABILITY APIs
+3.1 View Available Products
+GET /products
+Description:
+Return list of products available for the dealer.
+Include:
+- SKU
+- Name
+- Price
+- Available stock
+- Location
+Flow:
+
+Get dealer location.
+
+Fetch inventory from:
+
+Dealer location
+
+Nearest warehouse
+
+Return combined availability.
+
+
+---
+
+### 3.2 Get Product Details
+GET /products/:productId
+Description:
+Return detailed product info including:
+
+Price
+
+Available stock
+
+Active coupons
+
+
+---
+
+# 4. COUPON / SCHEME APIs
+
+### 4.1 Get Active Coupons
+GET /coupons
+Description:
+Return coupons applicable to dealer.
+
+
+Flow:
+1. Get dealer location.
+2. Fetch coupons:
+   - Valid for current date
+   - Applicable to dealer or region.
+5. DEALER INVENTORY APIs
+5.1 Get Dealer Inventory
+GET /inventory
+Description:
+Return dealer’s current inventory.
+5.2 Get Inventory for a Product
+GET /inventory/:productId
+Description:
+Get stock details for a specific product.
+6. DEALER ORDER APIs
+Two types of orders:
+
+Dealer → Company (stock fulfillment)
+
+Dealer → Dealer (commission-based order)
+
+6.1 Place Stock Fulfillment Order
+POST /orders/fulfillment
+Description:
+Dealer places order to warehouse/company.
+Flow:
+
+Validate dealer identity.
+
+Check stock at warehouse.
+
+If stock available:
+
+Reserve stock at warehouse.
+
+Create order.
+
+Return order confirmation.
+
+
+Request:
+{
+  toLocationId,
+  items: [
+    { productId, quantity }
+  ]
+}
+6.2 Place Dealer-to-Dealer Order
+POST /orders/dealer
+Description:
+Dealer places order to another dealer.
+Commission-based.
+Flow:
+
+Identify source dealer.
+
+Check stock availability.
+
+Reserve stock.
+
+Create order.
+
+Store commission data.
+
+
+Request:
+{
+  toDealerId,
+  items: [
+    { productId, quantity }
+  ]
+}
+6.3 Get Dealer Orders
+GET /orders
+Description:
+List all orders related to the dealer.
+Includes:
+- Orders placed by dealer
+- Orders received by dealer
+Filters:
+
+status
+
+date range
+
+
+---
+
+## 6.4 Get Order Details
+GET /orders/:orderId
+Description:
+Return full order details.
+
+
+---
+
+## 6.5 Cancel Order
+DELETE /orders/:orderId
+Description:
+Cancel an order and release reserved stock.
+
+
+Flow:
+1. Check order status.
+2. If not shipped:
+   - Release reserved stock.
+   - Update order status.
+7. ORDER TRACKING APIs
+7.1 Track Order
+GET /orders/:orderId/tracking
+Description:
+Return shipment status and tracking details.
+Flow:
+
+Fetch shipment linked to order.
+
+Return:
+
+Current status
+
+Shipment timeline
+
+
+---
+
+# 8. SALES HISTORY APIs
+
+### 8.1 Get Sales History
+GET /sales
+Description:
+Return dealer sales history.
+
+
+Filters:
+- date range
+- product
+8.2 Sales Summary
+GET /sales/summary
+Description:
+Return:
+- Total sales
+- Top products
+- Revenue
+9. ALERT APIs
+9.1 Get Dealer Alerts
+GET /alerts
+Description:
+Return alerts for dealer:
+- Low stock
+- High demand
+Flow:
+
+Fetch alerts where:
+locationId = dealer location
+status = active
+
+
+---
+
+### 9.2 Resolve Alert
+PUT /alerts/:alertId/resolve
+Description:
+Mark alert as resolved.
+
+
+---
+
+# 10. STOCK TRANSFER APIs
+
+### 10.1 Request Stock Transfer
+POST /inventory/transfer
+Description:
+Request stock from another location.
+
+
+Flow:
+1. Validate source location.
+2. Check stock availability.
+3. Reserve stock.
+4. Create transfer order.
+11. AI-BASED DEALER APIs
+These use the FastAPI ML service.
+
+11.1 Get Demand Forecast
+GET /ai/forecast
+Description:
+Return demand prediction for dealer products.
+Flow:
+
+Fetch dealer sales history.
+
+Send to ML service.
+
+Store prediction.
+
+Return forecast.
+
+
+---
+
+### 11.2 Get Stock Recommendations
+GET /ai/recommendations
+Description:
+Return recommended stock levels for dealer.
+
+
+Flow:
+1. Compare:
+   predicted demand vs current stock.
+2. Generate recommendation.
+12. DEALER PROFILE APIs
+12.1 Get Dealer Profile
+GET /profile
+Description:
+Return dealer details and location.
+12.2 Update Dealer Profile
+PUT /profile
+Description:
+Update dealer information.
+13. HEALTH CHECK
+GET /health
+Description:
+Check dealer service status.
+REQUIRED BUSINESS RULES
+Only dealers can access dealer routes.
+
+Dealers can only:
+
+View their own inventory
+
+View their own orders
+
+Dealer-to-dealer orders must:
+
+Check stock
+
+Reserve stock
+
+All stock changes must create inventory movement records.
+
+Alerts must be auto-generated:
+
+If availableStock < reorderLevel
+
+If predictedDemand > availableStock
+
+ERROR HANDLING
+Use:
+
+ValidationError → 400
+
+UnauthorizedError → 401
+
+NotFoundError → 404
+
+ConflictError → 409
+
+Standard response format:
+{
+success: false,
+message: "Error message"
+}
+
+DELIVERABLES
+Generate:
+
+Dealer routes
+
+Dealer controllers
+
+Dealer services
+
+Validation schemas
+
+Role middleware usage
+
+Postman collection for dealer APIs
+
+API documentation in README

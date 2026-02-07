@@ -58,6 +58,20 @@ const applyCoupon = async (req, res, next) => {
     }
 };
 
+const updateCoupon = async (req, res, next) => {
+    try {
+        const coupon = await Coupon.findOneAndUpdate(
+            { _id: req.params.id, companyId: req.user.companyId },
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!coupon) throw new AppError('Coupon not found', 404);
+        res.json(coupon);
+    } catch (error) {
+        next(error);
+    }
+};
+
 const deleteCoupon = async (req, res, next) => {
     try {
         const coupon = await Coupon.findOneAndDelete({ _id: req.params.id, companyId: req.user.companyId });
@@ -68,4 +82,4 @@ const deleteCoupon = async (req, res, next) => {
     }
 };
 
-module.exports = { createCoupon, getCoupons, applyCoupon, deleteCoupon };
+module.exports = { createCoupon, getCoupons, updateCoupon, applyCoupon, deleteCoupon };

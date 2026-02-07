@@ -5,11 +5,7 @@ const AppError = require('../utils/AppError');
 const crypto = require('crypto');
 
 const createOrder = async (user, orderData) => {
-  // 1. Validate Items
-  // 2. Check Stock & Reserve
-  // 3. Create Order
-  
-  const { items, fromLocationId, customerId } = orderData;
+  const { items, fromLocationId, toLocationId, orderType, customerId } = orderData;
   let totalAmount = 0;
   const processedItems = [];
 
@@ -42,8 +38,10 @@ const createOrder = async (user, orderData) => {
   const order = await Order.create({
     orderNumber: 'ORD-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
     companyId: user.companyId,
-    customerId: customerId || user._id, // If dealer ordering, they are the customer
+    orderType: orderType || 'customer_order',
+    customerId: customerId || user._id,
     fromLocationId,
+    toLocationId,
     items: processedItems,
     totalAmount,
     status: 'pending'
@@ -56,7 +54,7 @@ const updateOrderStatus = async (user, orderId, status) => {
   const order = await Order.findOne({ _id: orderId, companyId: user.companyId });
   if (!order) throw new AppError('Order not found', 404);
 
-  if (status === 'shipped' && order.status !== 'shipped') {
+  if (status === 'shipped' && order.status !== 'shipped' && order.status !== 'delivered') {
      // Fulfill reservation (deduct physical stock)
      for (const item of order.items) {
        await inventoryService.updateStock(
@@ -64,15 +62,48 @@ const updateOrderStatus = async (user, orderId, status) => {
          item.productId, 
          order.fromLocationId, 
          item.quantity, 
-         'fulfill_reservation', 
-         order._id
+         'fulfill_reserve', 
+         order._id,
+         false,
+         order.toLocationId
        );
-       
-       // Create 'sale' movement logic implicit in fulfill_reservation or explicit?
-       // In inventoryService I made fulfill_reservation reduce totalStock.
-       // I should probably log a 'sale' movement there or here. 
-       // For simplicity, let's assume fulfill_reservation handles the logic of removing it from warehouse.
      }
+  }
+
+  if (status === 'delivered' && order.status !== 'delivered') {
+      // If dealer_order, add stock to destination location
+      if (order.orderType === 'dealer_order' && order.toLocationId) {
+          for (const item of order.items) {
+              await inventoryService.updateStock(
+                  user,
+                  item.productId,
+                  order.toLocationId,
+                  item.quantity,
+                  'transfer', // Add to destination
+                  order._id,
+                  true // Skip logging movement here as it was logged during shipment/transfer logically
+              );
+          }
+      }
+  }
+
+  if (status === 'cancelled' && order.status !== 'cancelled') {
+      // Release reserved stock if it was still pending or confirmed (not yet shipped)
+      if (['pending', 'confirmed'].includes(order.status)) {
+          for (const item of order.items) {
+              await inventoryService.updateStock(
+                  user,
+                  item.productId,
+                  order.fromLocationId,
+                  item.quantity,
+                  'release_reserve'
+              );
+          }
+      } else if (['shipped', 'delivered'].includes(order.status)) {
+          // If already shipped, cancellation might mean a return? 
+          // For now, let's just handle it as not possible or need manual return.
+          throw new AppError('Cannot cancel order after it has been shipped', 400);
+      }
   }
 
   order.status = status;

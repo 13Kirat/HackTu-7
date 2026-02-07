@@ -82,7 +82,9 @@ Base URL: `/api/v1`
 ### AI & Analytics
 - `POST /ai/forecast` - Trigger Demand Forecast
 - `GET /ai/forecasts` - Get Forecast History
+- `POST /ai/replenishment` - Generate stock recommendations
 - `GET /analytics/sales` - Sales Summary
+- `GET /analytics/stock` - Stock classification (Fast/Slow/Dead)
 - `GET /analytics/imbalances` - Stock Imbalances
 
 ## Postman Collection

@@ -3,17 +3,18 @@ const AppError = require('../utils/AppError');
 
 const getAlerts = async (req, res, next) => {
     try {
-        // Filter by location if passed, else company wide
+        const { locationId, productId, status, type } = req.query;
         const query = { companyId: req.user.companyId };
-        // If query params has locationId
-        if (req.query.locationId) {
-            // Logic to link alert to location?
-            // Alert schema has relatedEntity. If that's Location, works.
-            // If relatedEntity is Product, we don't know location easily.
-            // Assuming Alerts are company wide for now unless refined.
-        }
         
-        const alerts = await Alert.find(query).sort({ createdAt: -1 });
+        if (locationId) query.locationId = locationId;
+        if (productId) query.productId = productId;
+        if (status) query.status = status;
+        if (type) query.type = type;
+        
+        const alerts = await Alert.find(query)
+            .populate('productId', 'name sku')
+            .populate('locationId', 'name type')
+            .sort({ createdAt: -1 });
         res.json(alerts);
     } catch (error) {
         next(error);

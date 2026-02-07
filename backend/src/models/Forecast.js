@@ -10,4 +10,7 @@ const forecastSchema = new mongoose.Schema({
   generatedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
+// forecastSchema.index({ companyId: 1, productId: 1, locationId: 1 }, { unique: true });
+// forecastSchema.index({ companyId: 1, forecastDate: 1 });
+
 module.exports = mongoose.model('Forecast', forecastSchema);

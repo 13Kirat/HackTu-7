@@ -4,9 +4,12 @@ const { createProduct, getProducts, getProduct, updateProduct, deleteProduct } =
 const { protect } = require('../middlewares/authMiddleware');
 const { checkRole } = require('../middlewares/roleMiddleware');
 
+const validate = require('../middlewares/validate');
+const { productSchemas } = require('../utils/validation');
+
 router.use(protect);
 
-router.post('/', checkRole(['manage_products', 'admin']), createProduct);
+router.post('/', checkRole(['manage_products', 'admin']), validate(productSchemas.createProduct), createProduct);
 router.get('/', getProducts);
 router.get('/:id', getProduct);
 router.put('/:id', checkRole(['manage_products', 'admin']), updateProduct);

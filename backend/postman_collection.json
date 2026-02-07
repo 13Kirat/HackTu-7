@@ -1,15 +1,15 @@
 {
 	"info": {
-		"_postman_id": "supply-chain-v1-full-v2",
-		"name": "Supply Chain System - Automated Test",
+		"_postman_id": "supply-chain-v1-full-v4",
+		"name": "Supply Chain System - Full API",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "1. Setup & Auth",
+			"name": "1. Auth",
 			"item": [
 				{
-					"name": "Login",
+					"name": "Login Admin",
 					"event": [
 						{
 							"listen": "test",
@@ -18,6 +18,7 @@
 									"var jsonData = pm.response.json();",
 									"if (jsonData.token) {",
 									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    pm.collectionVariables.set(\"companyId\", jsonData.companyId);",
 									"}"
 								],
 								"type": "text/javascript"
@@ -35,18 +36,28 @@
 					}
 				},
 				{
-					"name": "Get & Save Locations",
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/auth/profile", "host": ["{{baseUrl}}"], "path": ["auth", "profile"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Master Data Management",
+			"item": [
+				{
+					"name": "Create Product",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
 									"var jsonData = pm.response.json();",
-									"if (jsonData.length >= 2) {",
-									"    pm.collectionVariables.set(\"locationId\", jsonData[0]._id);",
-									"    pm.collectionVariables.set(\"targetLocationId\", jsonData[1]._id);",
-									"    console.log(\"Saved source: \" + jsonData[0].name);",
-									"    console.log(\"Saved target: \" + jsonData[1].name);",
+									"if (jsonData._id) {",
+									"    pm.collectionVariables.set(\"productId\", jsonData._id);",
 									"}"
 								],
 								"type": "text/javascript"
@@ -54,13 +65,20 @@
 						}
 					],
 					"request": {
-						"method": "GET",
-						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-						"url": { "raw": "{{baseUrl}}/locations", "host": ["{{baseUrl}}"], "path": ["locations"] }
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Smart Gadget\",\n    \"sku\": \"SMART-001\",\n    \"category\": \"Electronics\",\n    \"price\": 199.99,\n    \"costPrice\": 120.00\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
 					}
 				},
 				{
-					"name": "Get & Save Products",
+					"name": "Get Products",
 					"event": [
 						{
 							"listen": "test",
@@ -80,18 +98,153 @@
 						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
 						"url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
 					}
+				},
+				{
+					"name": "Get Locations",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.length >= 3) {",
+									"    pm.collectionVariables.set(\"factoryId\", jsonData.find(l => l.type === 'factory')._id);",
+									"    pm.collectionVariables.set(\"warehouseId\", jsonData.find(l => l.type === 'warehouse')._id);",
+									"    pm.collectionVariables.set(\"dealerId\", jsonData.find(l => l.type === 'dealer')._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/locations", "host": ["{{baseUrl}}"], "path": ["locations"] }
+					}
+				},
+				{
+					"name": "Get Users",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+					}
+				},
+				{
+					"name": "Create Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Logistics Manager\",\n    \"permissions\": [\"view_inventory\", \"create_shipment\"]\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] }
+					}
+				},
+				{
+					"name": "Get Roles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.length > 0) {",
+									"    pm.collectionVariables.set(\"roleId\", jsonData[0]._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] }
+					}
+				},
+				{
+					"name": "Update Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"permissions\": [\"view_inventory\", \"create_shipment\", \"view_analytics\"]\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["roles", "{{roleId}}"] }
+					}
+				},
+				{
+					"name": "Create Coupon",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData._id) {",
+									"    pm.collectionVariables.set(\"couponId\", jsonData._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SUMMERSALE\",\n    \"discountType\": \"percentage\",\n    \"discountValue\": 15,\n    \"minOrderValue\": 500\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/coupons", "host": ["{{baseUrl}}"], "path": ["coupons"] }
+					}
+				},
+				{
+					"name": "Update Coupon",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"discountValue\": 20\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/coupons/{{couponId}}", "host": ["{{baseUrl}}"], "path": ["coupons", "{{couponId}}"] }
+					}
 				}
 			]
 		},
 		{
-			"name": "2. Inventory Actions",
+			"name": "3. Inventory Management",
 			"item": [
 				{
-					"name": "Get Source Inventory",
+					"name": "Add Production Stock (Factory)",
 					"request": {
-						"method": "GET",
-						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-						"url": { "raw": "{{baseUrl}}/inventory/location/{{locationId}}", "host": ["{{baseUrl}}"], "path": ["inventory", "location", "{{locationId}}"] }
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": \"{{productId}}\",\n    \"locationId\": \"{{factoryId}}\",\n    \"quantity\": 500,\n    \"type\": \"manufacture\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/inventory", "host": ["{{baseUrl}}"], "path": ["inventory"] }
 					}
 				},
 				{
@@ -104,9 +257,175 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"productId\": \"{{productId}}\",\n    \"fromLocationId\": \"{{locationId}}\",\n    \"toLocationId\": \"{{targetLocationId}}\",\n    \"quantity\": 100\n}"
+							"raw": "{\n    \"productId\": \"{{productId}}\",\n    \"fromLocationId\": \"{{factoryId}}\",\n    \"toLocationId\": \"{{warehouseId}}\",\n    \"quantity\": 200\n}"
 						},
 						"url": { "raw": "{{baseUrl}}/inventory/transfer", "host": ["{{baseUrl}}"], "path": ["inventory", "transfer"] }
+					}
+				},
+				{
+					"name": "Get Company Inventory",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/inventory/company", "host": ["{{baseUrl}}"], "path": ["inventory", "company"] }
+					}
+				},
+				{
+					"name": "Get Movement History",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/inventory/movements", "host": ["{{baseUrl}}"], "path": ["inventory", "movements"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Order & Shipment",
+			"item": [
+				{
+					"name": "Create Dealer Order (from Warehouse)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData._id) {",
+									"    pm.collectionVariables.set(\"orderId\", jsonData._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fromLocationId\": \"{{warehouseId}}\",\n    \"toLocationId\": \"{{dealerId}}\",\n    \"items\": [\n        {\n            \"productId\": \"{{productId}}\",\n            \"quantity\": 10\n        }\n    ]\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/orders/dealer", "host": ["{{baseUrl}}"], "path": ["orders", "dealer"] }
+					}
+				},
+				{
+					"name": "Create Shipment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData._id) {",
+									"    pm.collectionVariables.set(\"shipmentId\", jsonData._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"{{orderId}}\",\n    \"carrier\": \"FastExpress\",\n    \"trackingNumber\": \"TRK123456\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/shipments", "host": ["{{baseUrl}}"], "path": ["shipments"] }
+					}
+				},
+				{
+					"name": "Update Shipment to Delivered",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"delivered\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/shipments/{{shipmentId}}/status", "host": ["{{baseUrl}}"], "path": ["shipments", "{{shipmentId}}", "status"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Analytics & AI",
+			"item": [
+				{
+					"name": "Sales Analytics",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/analytics/sales", "host": ["{{baseUrl}}"], "path": ["analytics", "sales"] }
+					}
+				},
+				{
+					"name": "Stock Insights (Fast/Slow/Dead)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/analytics/stock", "host": ["{{baseUrl}}"], "path": ["analytics", "stock"] }
+					}
+				},
+				{
+					"name": "Imbalances (Shortage/Overstock)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/analytics/imbalances", "host": ["{{baseUrl}}"], "path": ["analytics", "imbalances"] }
+					}
+				},
+				{
+					"name": "Demand Forecast (AI)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": \"{{productId}}\",\n    \"locationId\": \"{{warehouseId}}\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/ai/forecast", "host": ["{{baseUrl}}"], "path": ["ai", "forecast"] }
+					}
+				},
+				{
+					"name": "Stock Replenishment (AI)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"locationId\": \"{{warehouseId}}\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/ai/replenishment", "host": ["{{baseUrl}}"], "path": ["ai", "replenishment"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Alerts",
+			"item": [
+				{
+					"name": "Get Active Alerts",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": { "raw": "{{baseUrl}}/alerts", "host": ["{{baseUrl}}"], "path": ["alerts"] }
 					}
 				}
 			]
@@ -115,8 +434,14 @@
 	"variable": [
 		{ "key": "baseUrl", "value": "http://localhost:5000/api/v1", "type": "string" },
 		{ "key": "token", "value": "", "type": "string" },
+		{ "key": "companyId", "value": "", "type": "string" },
+		{ "key": "factoryId", "value": "", "type": "string" },
+		{ "key": "warehouseId", "value": "", "type": "string" },
+		{ "key": "dealerId", "value": "", "type": "string" },
 		{ "key": "productId", "value": "", "type": "string" },
-		{ "key": "locationId", "value": "", "type": "string" },
-		{ "key": "targetLocationId", "value": "", "type": "string" }
+		{ "key": "orderId", "value": "", "type": "string" },
+		{ "key": "shipmentId", "value": "", "type": "string" },
+		{ "key": "roleId", "value": "", "type": "string" },
+		{ "key": "couponId", "value": "", "type": "string" }
 	]
 }

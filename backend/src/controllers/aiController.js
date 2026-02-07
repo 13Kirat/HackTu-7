@@ -1,5 +1,4 @@
 const aiService = require('../services/aiService');
-const Forecast = require('../models/Forecast');
 
 const getDemandForecast = async (req, res, next) => {
   try {
@@ -13,10 +12,7 @@ const getDemandForecast = async (req, res, next) => {
 
 const getForecasts = async (req, res, next) => {
     try {
-        const forecasts = await Forecast.find({ companyId: req.user.companyId })
-            .populate('productId', 'name')
-            .populate('locationId', 'name')
-            .sort({ createdAt: -1 });
+        const forecasts = await aiService.getForecasts(req.user.companyId);
         res.json(forecasts);
     } catch (error) {
         next(error);
