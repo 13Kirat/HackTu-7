@@ -1,4 +1,10 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { inventoryService } from "@/services/inventoryService";
+import { locationService } from "@/services/locationService";
+import { productService } from "@/services/productService";
+import { orderService } from "@/services/orderService";
+import { shipmentService } from "@/services/shipmentService";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
@@ -7,51 +13,78 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeftRight } from "lucide-react";
-import { inventory, locations, products } from "@/mock/data";
+import { ArrowRight, Loader2, Truck } from "lucide-react";
 import type { InventoryItem } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function Inventory() {
-  const [locationFilter, setLocationFilter] = useState<string>("all");
-  const [regionFilter, setRegionFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [transferOpen, setTransferOpen] = useState(false);
-  const [fromLoc, setFromLoc] = useState("");
-  const [toLoc, setToLoc] = useState("");
-  const [transferProduct, setTransferProduct] = useState("");
-  const [transferQty, setTransferQty] = useState("");
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { addNotification } = useNotifications();
 
-  // Derive categories from products
-  const categories = [...new Set(products.map((p) => p.category))];
+  const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [shipmentOpen, setShipmentOpen] = useState(false);
+  
+  // Form state
+  const [fromLoc, setFromLoc] = useState("");
+  const [toLoc, setToLoc] = useState("");
+  const [targetProduct, setTargetProduct] = useState("");
+  const [quantity, setQuantity] = useState("");
 
-  // Map product IDs to categories for filtering
-  const productCategoryMap = Object.fromEntries(products.map((p) => [p.id, p.category]));
-
-  const filtered = inventory.filter((item) => {
-    if (locationFilter !== "all" && item.locationType !== locationFilter) return false;
-    if (regionFilter !== "all" && item.region !== regionFilter) return false;
-    if (categoryFilter !== "all" && productCategoryMap[item.productId] !== categoryFilter) return false;
-    return true;
+  const { data: inventory, isLoading: invLoading } = useQuery({
+    queryKey: ["inventory"],
+    queryFn: inventoryService.getAll,
   });
 
-  const handleTransfer = () => {
-    if (!fromLoc || !toLoc || !transferProduct || !transferQty) {
-      toast({ title: "Validation Error", description: "Please fill in all fields", variant: "destructive" });
+  const { data: locations } = useQuery({
+    queryKey: ["locations"],
+    queryFn: locationService.getAll,
+  });
+
+  const { data: products } = useQuery({
+    queryKey: ["products"],
+    queryFn: productService.getAll,
+  });
+
+  const shipmentMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      // 1. Create Order
+      const order = await orderService.createDealerOrder({
+        fromLocationId: payload.fromLoc,
+        toLocationId: payload.toLoc,
+        items: [{ productId: payload.productId, quantity: payload.quantity }]
+      });
+      // 2. Create Shipment for that order
+      return await shipmentService.create({ orderId: order._id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      toast({ title: "Shipment Created", description: "Stock has been reserved at source." });
+      setShipmentOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.response?.data?.message || "Failed to create shipment", variant: "destructive" });
+    }
+  });
+
+  const resetForm = () => { setFromLoc(""); setToLoc(""); setTargetProduct(""); setQuantity(""); };
+
+  const handleCreateShipment = () => {
+    if (!fromLoc || !toLoc || !targetProduct || !quantity) {
+      toast({ title: "Validation Error", description: "All fields are required", variant: "destructive" });
       return;
     }
-    if (fromLoc === toLoc) {
-      toast({ title: "Validation Error", description: "Source and destination must be different", variant: "destructive" });
-      return;
-    }
-    toast({ title: "Transfer Created", description: `Transferred ${transferQty} units successfully.` });
-    addNotification({ type: "success", title: "Stock Transfer", message: `${transferQty} units transferred between locations` });
-    setTransferOpen(false);
-    setFromLoc(""); setToLoc(""); setTransferProduct(""); setTransferQty("");
+    shipmentMutation.mutate({ fromLoc, toLoc, productId: targetProduct, quantity: Number(quantity) });
   };
+
+  const filtered = inventory?.filter((item) => {
+    if (locationFilter !== "all" && item.locationType !== locationFilter) return false;
+    // category filter would need mapping or backend support
+    return true;
+  });
 
   const columns = [
     { key: "productName", header: "Product" },
@@ -69,45 +102,47 @@ export default function Inventory() {
         {i.availableStock}
       </span>
     )},
-    { key: "reorderLevel", header: "Reorder Level" },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Inventory Management" description="Combined inventory across all locations">
-        <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
+      <PageHeader title="Inventory Management" description="Monitor and manage stock across the network">
+        <Dialog open={shipmentOpen} onOpenChange={setShipmentOpen}>
           <DialogTrigger asChild>
-            <Button><ArrowLeftRight className="mr-2 h-4 w-4" />Transfer Stock</Button>
+            <Button><Truck className="mr-2 h-4 w-4" />Create Shipment</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Stock Transfer</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Create Inter-Location Shipment</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label>From Location</Label>
+                <Label>Source (From)</Label>
                 <Select value={fromLoc} onValueChange={setFromLoc}>
                   <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
-                  <SelectContent>{locations.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{locations?.filter(l => l.type !== 'dealer').map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>To Location</Label>
+                <Label>Destination (To)</Label>
                 <Select value={toLoc} onValueChange={setToLoc}>
                   <SelectTrigger><SelectValue placeholder="Select destination" /></SelectTrigger>
-                  <SelectContent>{locations.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{locations?.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Product</Label>
-                <Select value={transferProduct} onValueChange={setTransferProduct}>
+                <Select value={targetProduct} onValueChange={setTargetProduct}>
                   <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
-                  <SelectContent>{products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{products?.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Quantity</Label>
-                <Input type="number" placeholder="Enter quantity" value={transferQty} onChange={(e) => setTransferQty(e.target.value)} />
+                <Input type="number" placeholder="Enter quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
               </div>
-              <Button className="w-full" onClick={handleTransfer}>Confirm Transfer</Button>
+              <Button className="w-full" onClick={handleCreateShipment} disabled={shipmentMutation.isPending}>
+                {shipmentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirm & Ship
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -116,7 +151,7 @@ export default function Inventory() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <Select value={locationFilter} onValueChange={setLocationFilter}>
-          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Types" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="factory">Factory</SelectItem>
@@ -124,26 +159,15 @@ export default function Inventory() {
             <SelectItem value="dealer">Dealer</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={regionFilter} onValueChange={setRegionFilter}>
-          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Regions</SelectItem>
-            <SelectItem value="North">North</SelectItem>
-            <SelectItem value="South">South</SelectItem>
-            <SelectItem value="East">East</SelectItem>
-            <SelectItem value="West">West</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
       </div>
 
-      <DataTable data={filtered} columns={columns} searchKey="productName" searchPlaceholder="Search products..." />
+      {invLoading ? (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <DataTable data={filtered || []} columns={columns} searchKey="productName" searchPlaceholder="Search products..." />
+      )}
     </div>
   );
 }

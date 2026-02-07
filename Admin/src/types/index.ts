@@ -12,8 +12,12 @@ export interface Location {
   id: string;
   name: string;
   type: LocationType;
-  region: string;
   address: string;
+  managerId?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface Product {
@@ -49,12 +53,12 @@ export interface InventoryMovement {
   date: string;
   productId: string;
   productName: string;
-  fromLocationId: string;
+  fromLocationId?: string;
   fromLocationName: string;
-  toLocationId: string;
+  toLocationId?: string;
   toLocationName: string;
   quantity: number;
-  movementType: MovementType;
+  movementType: string;
 }
 
 export type AlertType = "low_stock" | "overstock" | "high_demand";
@@ -85,7 +89,7 @@ export interface ForecastPoint {
   predicted: number;
 }
 
-export type UserRole = "admin" | "manager" | "viewer" | "operator";
+export type UserRole = "Company Admin" | "Super Admin" | "Factory Manager" | "Dealer" | "Buyer" | "admin" | "manager" | "viewer" | "operator";
 export type UserStatus = "active" | "inactive";
 
 export interface User {
@@ -93,9 +97,11 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  location: string;
-  status: UserStatus;
+  location?: string;
+  companyId?: string;
+  status?: UserStatus;
   avatar?: string;
+  token?: string;
 }
 
 export interface Role {

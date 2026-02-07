@@ -1,81 +1,107 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import api from "@/lib/api";
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  role: string;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = "supplyhub_auth_user";
-const USERS_KEY = "supplyhub_users";
-
-interface StoredUser {
-  id: string;
-  email: string;
-  name: string;
-  password: string;
-}
-
-function getStoredUsers(): StoredUser[] {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(users: StoredUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
+const TOKEN_KEY = "dealer_token";
+const USER_KEY = "dealer_auth_user";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setUser(JSON.parse(stored));
-    } catch {}
-    setIsLoading(false);
+      const response = await api.get('/auth/profile');
+      const userData = response.data;
+      
+      const roleName = userData.role?.name || userData.role;
+      const allowedRoles = ['Dealer', 'Factory Manager', 'Operator', 'operator', 'manager', 'dealer'];
+      
+      // Basic normalization check
+      const normalizedRole = roleName.toLowerCase();
+      const isAllowed = allowedRoles.some(r => r.toLowerCase() === normalizedRole);
+
+      if (!isAllowed) {
+        logout();
+        return;
+      }
+
+      const authUser: AuthUser = {
+        id: userData._id,
+        email: userData.email,
+        name: userData.name,
+        role: roleName
+      };
+      
+      setUser(authUser);
+      localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const users = getStoredUsers();
-    const found = users.find(u => u.email === email && u.password === password);
-    if (!found) throw new Error("Invalid email or password");
-    const authUser: AuthUser = { id: found.id, email: found.email, name: found.name };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
-    setUser(authUser);
-  };
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
-  const signup = async (name: string, email: string, password: string) => {
-    const users = getStoredUsers();
-    if (users.find(u => u.email === email)) throw new Error("Email already registered");
-    const newUser: StoredUser = { id: crypto.randomUUID(), email, name, password };
-    saveUsers([...users, newUser]);
-    const authUser: AuthUser = { id: newUser.id, email, name };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+  const login = async (email: string, password: string) => {
+    const response = await api.post('/auth/login', { email, password });
+    const { token, ...userData } = response.data;
+
+    const roleName = userData.role;
+    const allowedRoles = ['Dealer', 'Factory Manager', 'Operator', 'operator', 'manager', 'dealer'];
+    
+    const normalizedRole = roleName.toLowerCase();
+    const isAllowed = allowedRoles.some(r => r.toLowerCase() === normalizedRole);
+
+    if (!isAllowed) {
+      throw new Error("Access denied. Only Operators, Managers, and Dealers can login to this portal.");
+    }
+
+    const authUser: AuthUser = {
+      id: userData._id,
+      email: userData.email,
+      name: userData.name,
+      role: roleName
+    };
+
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(authUser));
     setUser(authUser);
   };
 
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

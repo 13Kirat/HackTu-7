@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Role = require('../models/Role');
+const Company = require('../models/Company');
 const generateToken = require('../utils/generateToken');
 const AppError = require('../utils/AppError');
 
@@ -30,11 +31,25 @@ const loginUser = async (req, res, next) => {
 
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, roleId, companyId, locationId } = req.body;
+    let { name, email, password, roleId, companyId, locationId } = req.body;
     
+    // Fetch default role if not provided
+    if (!roleId) {
+        const defaultRole = await Role.findOne({ name: 'Buyer' });
+        if (!defaultRole) throw new AppError('Default Buyer role not found', 500);
+        roleId = defaultRole._id;
+    }
+
+    // Fetch default company if not provided
+    if (!companyId) {
+        const defaultCompany = await Company.findOne({});
+        if (!defaultCompany) throw new AppError('Default Company not found', 500);
+        companyId = defaultCompany._id;
+    }
+
     // Simple validation
-    if (!name || !email || !password || !roleId || !companyId) {
-        throw new AppError('Missing required fields', 400);
+    if (!name || !email || !password) {
+        throw new AppError('Missing required fields (name, email, password)', 400);
     }
 
     const userExists = await User.findOne({ email });
@@ -54,6 +69,7 @@ const registerUser = async (req, res, next) => {
       name: user.name,
       email: user.email,
       companyId: user.companyId,
+      role: 'Buyer', // Assuming if we use default it is Buyer
       token: generateToken(user._id),
     });
   } catch (error) {

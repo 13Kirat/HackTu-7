@@ -15,9 +15,9 @@ const inventoryMovementSchema = new mongoose.Schema({
   performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
-// inventoryMovementSchema.index({ companyId: 1, createdAt: -1 });
-// inventoryMovementSchema.index({ productId: 1, companyId: 1 });
-// inventoryMovementSchema.index({ fromLocationId: 1 });
-// inventoryMovementSchema.index({ toLocationId: 1 });
+inventoryMovementSchema.index({ companyId: 1, createdAt: -1 });
+inventoryMovementSchema.index({ productId: 1, companyId: 1 });
+inventoryMovementSchema.index({ fromLocationId: 1 });
+inventoryMovementSchema.index({ toLocationId: 1 });
 
 module.exports = mongoose.model('InventoryMovement', inventoryMovementSchema);

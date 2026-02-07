@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Route, BarChart3, TrendingUp,
   RefreshCw, PieChart, Users, Shield, Box, Ticket, Settings,
-  ChevronLeft, Menu,
+  ChevronLeft, Menu, MapPin
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
   { title: "Inventory", path: "/inventory", icon: Package },
+  { title: "Locations", path: "/locations", icon: MapPin },
   { title: "Product Tracking", path: "/tracking", icon: Route },
   { title: "Stock Insights", path: "/insights", icon: BarChart3 },
   { title: "Forecasting", path: "/forecasting", icon: TrendingUp },

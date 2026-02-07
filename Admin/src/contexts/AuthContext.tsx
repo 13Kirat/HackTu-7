@@ -1,100 +1,97 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { User } from "@/types";
-import { users } from "@/mock/data";
+import api from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem("auth_user");
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await api.get("/auth/profile");
+      const userData = response.data;
+      
+      // Ensure role is Admin
+      const roleName = userData.role?.name || userData.role;
+      if (roleName !== "Company Admin" && roleName !== "Super Admin") {
+        logout();
+        return;
+      }
+
+      setUser({
+        id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        role: roleName,
+        companyId: userData.companyId?._id || userData.companyId,
+      });
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
-    // Simulate API delay
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      const { token, ...userData } = response.data;
 
-    if (!email || !password) {
+      // Ensure the user logging in has Admin role
+      const roleName = userData.role; // Backend returns role name as string in login response
+      if (roleName !== "Company Admin" && roleName !== "Super Admin") {
+        setIsLoading(false);
+        return { success: false, error: "Access denied. Only Admins can login to this panel." };
+      }
+
+      const userObj: User = {
+        id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        role: roleName,
+        companyId: userData.companyId,
+      };
+
+      localStorage.setItem("auth_token", token);
+      setUser(userObj);
       setIsLoading(false);
-      return { success: false, error: "Email and password are required" };
-    }
-
-    if (password.length < 6) {
+      return { success: true };
+    } catch (error: any) {
       setIsLoading(false);
-      return { success: false, error: "Password must be at least 6 characters" };
+      const message = error.response?.data?.message || "Login failed. Please check your credentials.";
+      return { success: false, error: message };
     }
-
-    // Check mock users (any password >= 6 chars works for mock)
-    const found = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (!found) {
-      setIsLoading(false);
-      return { success: false, error: "No account found with this email" };
-    }
-
-    if (found.status === "inactive") {
-      setIsLoading(false);
-      return { success: false, error: "This account has been deactivated" };
-    }
-
-    setUser(found);
-    localStorage.setItem("auth_user", JSON.stringify(found));
-    setIsLoading(false);
-    return { success: true };
-  }, []);
-
-  const signup = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-
-    if (!name || !email || !password) {
-      setIsLoading(false);
-      return { success: false, error: "All fields are required" };
-    }
-
-    if (password.length < 6) {
-      setIsLoading(false);
-      return { success: false, error: "Password must be at least 6 characters" };
-    }
-
-    const exists = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (exists) {
-      setIsLoading(false);
-      return { success: false, error: "An account with this email already exists" };
-    }
-
-    const newUser: User = {
-      id: `u${Date.now()}`,
-      name,
-      email,
-      role: "viewer",
-      location: "Unassigned",
-      status: "active",
-    };
-
-    setUser(newUser);
-    localStorage.setItem("auth_user", JSON.stringify(newUser));
-    setIsLoading(false);
-    return { success: true };
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem("auth_user");
+    localStorage.removeItem("auth_token");
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

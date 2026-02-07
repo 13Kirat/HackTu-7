@@ -22,8 +22,8 @@ const orderSchema = new mongoose.Schema({
   couponCode: { type: String }
 }, { timestamps: true });
 
-// orderSchema.index({ companyId: 1, createdAt: -1 });
-// orderSchema.index({ customerId: 1 });
-// orderSchema.index({ status: 1 });
+orderSchema.index({ companyId: 1, createdAt: -1 });
+orderSchema.index({ customerId: 1 });
+orderSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Order', orderSchema);

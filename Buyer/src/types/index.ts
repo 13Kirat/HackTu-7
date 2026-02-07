@@ -72,4 +72,5 @@ export interface UserProfile {
   location: string;
   avatar: string;
   company: string;
+  companyId?: string;
 }

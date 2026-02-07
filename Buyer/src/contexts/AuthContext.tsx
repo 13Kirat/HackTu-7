@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { UserProfile } from '@/types';
-import { mockProfile } from '@/mock/data';
+import api from '@/lib/api';
 
 interface AuthUser {
   id: string;
@@ -12,118 +12,154 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-  register: (data: { name: string; email: string; password: string; company: string }) => Promise<{ success: boolean; message: string }>;
+  register: (data: { name: string; email: string; password: string; company?: string }) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   updateProfile: (data: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'supplyhub_auth';
-const USERS_KEY = 'supplyhub_users';
-
-// Seed a demo account
-const DEMO_USER = {
-  email: 'rajesh.kumar@example.com',
-  password: 'password123',
-  profile: mockProfile,
-};
-
-function getStoredUsers(): Record<string, { password: string; profile: UserProfile }> {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    if (!raw) {
-      // Seed demo user
-      const seed: Record<string, { password: string; profile: UserProfile }> = {
-        [DEMO_USER.email]: { password: DEMO_USER.password, profile: DEMO_USER.profile },
-      };
-      localStorage.setItem(USERS_KEY, JSON.stringify(seed));
-      return seed;
-    }
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-function saveUsers(users: Record<string, { password: string; profile: UserProfile }>) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
+const TOKEN_KEY = 'buyer_token';
+const USER_KEY = 'buyer_user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session on mount
-  useEffect(() => {
+  const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setUser(JSON.parse(stored));
+      const response = await api.get('/auth/profile');
+      const userData = response.data;
+      
+      const roleName = userData.role?.name || userData.role;
+      const allowedRoles = ['Buyer', 'Retailer', 'Contractor'];
+      
+      if (!allowedRoles.includes(roleName)) {
+        logout();
+        return;
       }
-    } catch { /* ignore */ }
-    setIsLoading(false);
+
+      const authUser: AuthUser = {
+        id: userData._id,
+        email: userData.email,
+        profile: {
+          id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone || '',
+          location: userData.address || '',
+          avatar: userData.avatar || '',
+          company: userData.companyId?.name || 'My Company',
+          companyId: userData.companyId?._id || userData.companyId,
+        }
+      };
+      
+      setUser(authUser);
+      localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const persistSession = (authUser: AuthUser | null) => {
-    if (authUser) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-    setUser(authUser);
-  };
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const login = useCallback(async (email: string, password: string) => {
-    // Simulate network delay
-    await new Promise(r => setTimeout(r, 500));
-    const users = getStoredUsers();
-    const entry = users[email.toLowerCase()];
-    if (!entry || entry.password !== password) {
-      return { success: false, message: 'Invalid email or password' };
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const { token, ...userData } = response.data;
+
+      const roleName = userData.role;
+      const allowedRoles = ['Buyer', 'Retailer', 'Contractor'];
+      
+      if (!allowedRoles.includes(roleName)) {
+        return { success: false, message: 'Access denied. Use the appropriate portal.' };
+      }
+
+      const authUser: AuthUser = {
+        id: userData._id,
+        email: userData.email,
+        profile: {
+          id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone || '',
+          location: userData.address || '',
+          avatar: userData.avatar || '',
+          company: 'My Company', // Backend login doesn't populate company name by default
+          companyId: userData.companyId,
+        }
+      };
+
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+      setUser(authUser);
+      
+      return { success: true, message: 'Login successful' };
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Invalid email or password';
+      return { success: false, message };
     }
-    const authUser: AuthUser = { id: entry.profile.id, email: email.toLowerCase(), profile: entry.profile };
-    persistSession(authUser);
-    return { success: true, message: 'Login successful' };
   }, []);
 
-  const register = useCallback(async (data: { name: string; email: string; password: string; company: string }) => {
-    await new Promise(r => setTimeout(r, 500));
-    const users = getStoredUsers();
-    if (users[data.email.toLowerCase()]) {
-      return { success: false, message: 'An account with this email already exists' };
+  const register = useCallback(async (data: { name: string; email: string; password: string; company?: string }) => {
+    try {
+      const response = await api.post('/auth/register', {
+        name: data.name,
+        email: data.email,
+        password: data.password
+      });
+      
+      const { token, ...userData } = response.data;
+
+      const authUser: AuthUser = {
+        id: userData._id,
+        email: userData.email,
+        profile: {
+          id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          phone: '',
+          location: '',
+          avatar: '',
+          company: data.company || 'My Company',
+          companyId: userData.companyId,
+        }
+      };
+
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+      setUser(authUser);
+      
+      return { success: true, message: 'Account created' };
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Registration failed';
+      return { success: false, message };
     }
-    const profile: UserProfile = {
-      id: `USR-${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      phone: '',
-      location: '',
-      avatar: '',
-      company: data.company,
-    };
-    users[data.email.toLowerCase()] = { password: data.password, profile };
-    saveUsers(users);
-    const authUser: AuthUser = { id: profile.id, email: data.email.toLowerCase(), profile };
-    persistSession(authUser);
-    return { success: true, message: 'Account created' };
   }, []);
 
   const logout = useCallback(() => {
-    persistSession(null);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    setUser(null);
   }, []);
 
   const updateProfile = useCallback((data: Partial<UserProfile>) => {
+    // For now, local update. Ideally would call API PUT /buyer/profile
     setUser(prev => {
       if (!prev) return prev;
       const updated = { ...prev, profile: { ...prev.profile, ...data } };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      // Also update the users store
-      const users = getStoredUsers();
-      if (users[prev.email]) {
-        users[prev.email].profile = updated.profile;
-        saveUsers(users);
-      }
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
       return updated;
     });
   }, []);

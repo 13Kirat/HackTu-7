@@ -14,6 +14,7 @@ import StockInsights from "./pages/StockInsights";
 import Forecasting from "./pages/Forecasting";
 import Replenishment from "./pages/Replenishment";
 import Analytics from "./pages/Analytics";
+import LocationsPage from "./pages/Locations";
 import UsersPage from "./pages/Users";
 import RolesPage from "./pages/Roles";
 import ProductsPage from "./pages/Products";
@@ -38,6 +39,7 @@ const App = () => (
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/inventory" element={<Inventory />} />
+                <Route path="/locations" element={<LocationsPage />} />
                 <Route path="/tracking" element={<ProductTracking />} />
                 <Route path="/insights" element={<StockInsights />} />
                 <Route path="/forecasting" element={<Forecasting />} />

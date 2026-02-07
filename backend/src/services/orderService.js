@@ -19,6 +19,10 @@ const createOrder = async (user, orderData) => {
       throw new AppError(`Product ${item.productId} not found at location`, 404);
     }
 
+    if (!inventory || !inventory.productId) {
+      throw new AppError(`Product data missing for item ${item.productId} at location`, 500);
+    }
+
     if (inventory.availableStock < item.quantity) {
       throw new AppError(`Insufficient stock for product ${inventory.productId.name}`, 400);
     }
@@ -54,24 +58,29 @@ const updateOrderStatus = async (user, orderId, status) => {
   const order = await Order.findOne({ _id: orderId, companyId: user.companyId });
   if (!order) throw new AppError('Order not found', 404);
 
-  if (status === 'shipped' && order.status !== 'shipped' && order.status !== 'delivered') {
-     // Fulfill reservation (deduct physical stock)
-     for (const item of order.items) {
-       await inventoryService.updateStock(
-         user, 
-         item.productId, 
-         order.fromLocationId, 
-         item.quantity, 
-         'fulfill_reserve', 
-         order._id,
-         false,
-         order.toLocationId
-       );
-     }
+  // LOGIC: If status becomes Shipped or Delivered, deduct from Source if not already done.
+  // If status becomes Delivered, add to Destination if dealer_order and not already done.
+
+  if (['shipped', 'delivered'].includes(status)) {
+      if (!['shipped', 'delivered'].includes(order.status)) {
+          // Physical stock deduction from source (fulfill reservation)
+          for (const item of order.items) {
+              await inventoryService.updateStock(
+                  user, 
+                  item.productId, 
+                  order.fromLocationId, 
+                  item.quantity, 
+                  'fulfill_reserve', 
+                  order._id,
+                  false,
+                  order.toLocationId
+              );
+          }
+      }
   }
 
   if (status === 'delivered' && order.status !== 'delivered') {
-      // If dealer_order, add stock to destination location
+      // Add stock to destination for internal dealer orders
       if (order.orderType === 'dealer_order' && order.toLocationId) {
           for (const item of order.items) {
               await inventoryService.updateStock(
@@ -79,9 +88,9 @@ const updateOrderStatus = async (user, orderId, status) => {
                   item.productId,
                   order.toLocationId,
                   item.quantity,
-                  'transfer', // Add to destination
+                  'transfer', // Addition leg of the transfer
                   order._id,
-                  true // Skip logging movement here as it was logged during shipment/transfer logically
+                  true // Movement already logged by fulfill_reserve leg logically
               );
           }
       }
