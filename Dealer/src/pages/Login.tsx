@@ -82,12 +82,12 @@ const Login = () => {
               {loading ? "Signing in…" : "Sign In"}
             </Button>
           </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
+          {/* <p className="text-center text-sm text-muted-foreground mt-4">
             Don't have an account?{" "}
             <Link to="/signup" className="text-primary font-medium hover:underline">
               Sign up
             </Link>
-          </p>
+          </p> */}
         </CardContent>
       </Card>
     </div>

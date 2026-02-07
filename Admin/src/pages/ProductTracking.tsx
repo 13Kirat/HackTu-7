@@ -48,6 +48,16 @@ export default function ProductTracking() {
     },
   });
 
+  const failMutation = useMutation({
+    mutationFn: (id: string) => shipmentService.updateStatus(id, "failed"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["movements"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      toast({ title: "Shipment Failed", description: "Reserved stock has been released back to source." });
+    },
+  });
+
   const movementColumns = [
     { key: "date", header: "Date", render: (m: InventoryMovement) => new Date(m.date).toLocaleString() },
     { key: "productName", header: "Product" },
@@ -68,11 +78,16 @@ export default function ProductTracking() {
     )},
     { key: "trackingNumber", header: "Tracking" },
     { key: "actions", header: "Actions", render: (s: any) => (
-      s.status !== 'delivered' && (
-        <Button size="sm" variant="outline" onClick={() => deliverMutation.mutate(s._id)} disabled={deliverMutation.isPending}>
-          {deliverMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="mr-1 h-3 w-3" />}
-          Mark Delivered
-        </Button>
+      !['delivered', 'failed'].includes(s.status) && (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => deliverMutation.mutate(s._id)} disabled={deliverMutation.isPending}>
+            {deliverMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="mr-1 h-3 w-3" />}
+            Mark Delivered
+          </Button>
+          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => failMutation.mutate(s._id)} disabled={failMutation.isPending}>
+            {failMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Mark Failed"}
+          </Button>
+        </div>
       )
     )},
   ];

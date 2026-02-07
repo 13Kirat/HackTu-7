@@ -96,8 +96,8 @@ const updateOrderStatus = async (user, orderId, status) => {
       }
   }
 
-  if (status === 'cancelled' && order.status !== 'cancelled') {
-      // Release reserved stock if it was still pending or confirmed (not yet shipped)
+  if (['cancelled', 'failed'].includes(status) && !['cancelled', 'failed'].includes(order.status)) {
+      // Release reserved stock if it was still pending or confirmed (not yet shipped/delivered)
       if (['pending', 'confirmed'].includes(order.status)) {
           for (const item of order.items) {
               await inventoryService.updateStock(
@@ -109,9 +109,11 @@ const updateOrderStatus = async (user, orderId, status) => {
               );
           }
       } else if (['shipped', 'delivered'].includes(order.status)) {
-          // If already shipped, cancellation might mean a return? 
-          // For now, let's just handle it as not possible or need manual return.
-          throw new AppError('Cannot cancel order after it has been shipped', 400);
+          // If already shipped or delivered, cancellation/failure might need a manual return process
+          // but for status update purposes we'll allow it but not auto-revert stock since it's "out"
+          if (status === 'cancelled') {
+              throw new AppError('Cannot cancel order after it has been shipped', 400);
+          }
       }
   }
 

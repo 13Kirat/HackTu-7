@@ -60,6 +60,8 @@ const updateShipmentStatus = async (req, res, next) => {
             await orderService.updateOrderStatus(req.user, shipment.orderId, 'delivered');
         } else if (status === 'in_transit') {
             await orderService.updateOrderStatus(req.user, shipment.orderId, 'shipped');
+        } else if (status === 'failed') {
+            await orderService.updateOrderStatus(req.user, shipment.orderId, 'failed');
         }
 
         await shipment.save();

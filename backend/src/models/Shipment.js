@@ -5,7 +5,7 @@ const shipmentSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
   trackingNumber: { type: String },
   carrier: { type: String },
-  status: { type: String, enum: ['pending', 'in_transit', 'delivered', 'returned'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'in_transit', 'delivered', 'returned', 'failed'], default: 'pending' },
   estimatedDelivery: { type: Date },
   actualDelivery: { type: Date }
 }, { timestamps: true });
