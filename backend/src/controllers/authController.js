@@ -87,4 +87,21 @@ const getProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { loginUser, registerUser, getProfile };
+const updateProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) throw new AppError('User not found', 404);
+    const { name, email, phone, address, settings } = req.body;
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
+    if (address) user.address = address;
+    if (settings) user.settings = { ...user.settings, ...settings };
+    await user.save();
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { loginUser, registerUser, getProfile, updateProfile };

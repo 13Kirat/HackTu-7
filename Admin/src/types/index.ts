@@ -104,6 +104,12 @@ export interface User {
   status?: UserStatus;
   avatar?: string;
   token?: string;
+  settings?: {
+    lowStockAlerts: boolean;
+    orderUpdates: boolean;
+    newRegistrations: boolean;
+    systemMaintenance: boolean;
+  };
 }
 
 export interface Role {

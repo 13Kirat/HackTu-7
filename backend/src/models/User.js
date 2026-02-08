@@ -14,6 +14,12 @@ const userSchema = new mongoose.Schema({
     lat: Number,
     lng: Number
   },
+  settings: {
+    lowStockAlerts: { type: Boolean, default: true },
+    orderUpdates: { type: Boolean, default: true },
+    newRegistrations: { type: Boolean, default: true },
+    systemMaintenance: { type: Boolean, default: true }
+  },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

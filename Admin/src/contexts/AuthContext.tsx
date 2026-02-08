@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  updateProfile: (data: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: userData.email,
         role: roleName,
         companyId: userData.companyId?._id || userData.companyId,
+        settings: userData.settings
       });
     } catch (error) {
       console.error("Auth check failed:", error);
@@ -72,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: userData.email,
         role: roleName,
         companyId: userData.companyId,
+        settings: userData.settings
       };
 
       localStorage.setItem("auth_token", token);
@@ -90,8 +93,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("auth_token");
   }, []);
 
+  const updateProfile = useCallback(async (data: any) => {
+    try {
+      const response = await api.put("/auth/profile", data);
+      const userData = response.data;
+      setUser(prev => prev ? {
+        ...prev,
+        name: userData.name,
+        email: userData.email,
+        settings: userData.settings
+      } : null);
+    } catch (error) {
+      console.error("Profile update failed:", error);
+      throw error;
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
