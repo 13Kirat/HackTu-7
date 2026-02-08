@@ -32,7 +32,7 @@ export const orderService = {
       return {
         id: o._id,
         orderNumber: o.orderNumber,
-        type: o.fromLocationId?.type === 'dealer' ? 'dealer' : 'fulfillment',
+        type: o.fromLocationId?.type === 'dealer' && o.toLocationId ? 'dealer' : 'fulfillment',
         status: o.status,
         dealerName: o.fromLocationId?.name || "Manufacturer",
         targetDealer: o.toLocationId?.name || "N/A",
@@ -55,7 +55,7 @@ export const orderService = {
   getOrderById: async (id: string): Promise<Order> => {
     const [orderRes, shipmentRes] = await Promise.all([
         api.get(`/orders/${id}`),
-        api.get(`/shipments`) // Fetch all and filter or add specific shipment by orderId endpoint if needed
+        api.get(`/shipments`)
     ]);
     
     const o = orderRes.data;
@@ -85,7 +85,7 @@ export const orderService = {
 
   getFulfillmentOrders: async (): Promise<Order[]> => {
     const orders = await orderService.getOrders();
-    return orders.filter(o => o.type === "fulfillment"); 
+    return orders.filter(o => o.warehouse !== "N/A" && !o.targetDealer); 
   },
 
   getDealerOrders: async (): Promise<Order[]> => {
@@ -97,4 +97,9 @@ export const orderService = {
     const response = await api.post("/orders/dealer", data);
     return response.data;
   },
+
+  createOfflineBill: async (data: { items: { productId: string; quantity: number }[] }): Promise<Order> => {
+    const response = await api.post("/orders/customer", data);
+    return response.data;
+  }
 };

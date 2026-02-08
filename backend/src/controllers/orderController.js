@@ -14,7 +14,13 @@ const createDealerOrder = async (req, res, next) => {
 
 const createCustomerOrder = async (req, res, next) => {
     try {
-        const orderData = { ...req.body, customerId: req.user._id, orderType: 'customer_order' };
+        const orderData = { 
+            ...req.body, 
+            customerId: req.user._id, 
+            orderType: 'customer_order',
+            fromLocationId: req.user.locationId, // Fulfilling from their own store
+            status: 'delivered' // Offline sale is immediate
+        };
         const order = await orderService.createOrder(req.user, orderData);
         res.status(201).json(order);
     } catch (error) {

@@ -6,7 +6,13 @@ const getAlerts = async (req, res, next) => {
         const { locationId, productId, status, type } = req.query;
         const query = { companyId: req.user.companyId };
         
-        if (locationId) query.locationId = locationId;
+        // If user is a Dealer/Manager/Operator, restrict to their location
+        if (req.user.role.name !== 'Company Admin' && req.user.role.name !== 'Super Admin' && req.user.locationId) {
+            query.locationId = req.user.locationId;
+        } else if (locationId) {
+            query.locationId = locationId;
+        }
+
         if (productId) query.productId = productId;
         if (status) query.status = status;
         if (type) query.type = type;

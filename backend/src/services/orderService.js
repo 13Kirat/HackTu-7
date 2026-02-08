@@ -48,8 +48,24 @@ const createOrder = async (user, orderData) => {
     toLocationId,
     items: processedItems,
     totalAmount,
-    status: 'pending'
+    status: orderData.status || 'pending'
   });
+
+  // If created as delivered (Offline Bill), fulfill immediately
+  if (order.status === 'delivered') {
+      for (const item of order.items) {
+          await inventoryService.updateStock(
+              user, 
+              item.productId, 
+              order.fromLocationId, 
+              item.quantity, 
+              'fulfill_reserve', 
+              order._id,
+              false,
+              order.toLocationId
+          );
+      }
+  }
 
   return order;
 };

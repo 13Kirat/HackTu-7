@@ -62,18 +62,23 @@ const AlertsPage = () => {
                 <div className="flex items-start gap-3">
                   {alert.type === "low_stock" ? (
                     <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                  ) : alert.type === "high_demand" ? (
+                    <TrendingUp className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                   ) : (
                     <TrendingUp className="h-5 w-5 text-warning mt-0.5 shrink-0" />
                   )}
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium">{alert.productName}</p>
-                      <Badge variant="outline" className="text-xs capitalize">
+                      <Badge 
+                        variant={alert.type === 'low_stock' ? 'destructive' : 'default'} 
+                        className="text-[10px] uppercase font-bold px-1.5 h-4"
+                      >
                         {alert.type.replace("_", " ")}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">{alert.recommendedAction}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">{alert.productName}</p>
+                    <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
                       <span>{new Date(alert.createdAt).toLocaleString()}</span>
                     </div>
                   </div>
