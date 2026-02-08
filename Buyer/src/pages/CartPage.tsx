@@ -39,7 +39,7 @@ export default function CartPage() {
                 className="flex gap-4 rounded-xl border border-border bg-card p-4"
               >
                 <div className="h-20 w-20 rounded-lg bg-muted shrink-0 overflow-hidden">
-                  <img src={item.product.images[0]} alt={item.product.name} className="h-full w-full object-cover" />
+                  <img src={'https://placehold.co/200x200/png?text=' + item.product.name.replace(/ /g, '+')} alt={item.product.name} className="h-full w-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <Link to={`/product/${item.product.id}`} className="font-heading font-semibold text-sm hover:text-primary transition-colors">

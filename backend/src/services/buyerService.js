@@ -50,8 +50,16 @@ const getProductCatalog = async (user, filters = {}) => {
     const dealer = await getNearestDealer(user);
     const query = { companyId: user.companyId };
     
-    if (filters.category) query.category = filters.category;
+    if (filters.category && filters.category !== 'none') query.category = filters.category;
     if (filters.search) query.name = { $regex: filters.search, $options: 'i' };
+    
+    if (filters.color && filters.color !== 'none') {
+        query['attributes.color'] = filters.color;
+    }
+    if (filters.finish && filters.finish !== 'none') {
+        query['attributes.finish'] = filters.finish;
+    }
+
     if (filters.minPrice || filters.maxPrice) {
         query.price = {};
         if (filters.minPrice) query.price.$gte = Number(filters.minPrice);

@@ -35,7 +35,7 @@ export default function ProductCard({ product, view = 'grid' }: ProductCardProps
       >
         <Link to={`/product/${product.id}`} className="shrink-0">
           <div className="h-24 w-24 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-            <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover" />
+            <img src={'https://placehold.co/200x200/png?text=' + product.name.replace(/ /g, '+')} alt={product.name} className="h-full w-full object-cover" />
           </div>
         </Link>
         <div className="flex-1 min-w-0">
@@ -70,7 +70,7 @@ export default function ProductCard({ product, view = 'grid' }: ProductCardProps
     >
       <Link to={`/product/${product.id}`}>
         <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
-          <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <img src={'https://placehold.co/400x400/png?text=' + product.name.replace(/ /g, '+')} alt={product.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
           <Badge variant="outline" className={`absolute top-3 right-3 text-[10px] backdrop-blur-sm ${statusColors[product.availability]}`}>
             {statusLabels[product.availability]}
           </Badge>

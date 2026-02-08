@@ -1,40 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { productService, couponService } from '@/services';
-import { Product, Dealer, Coupon } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { productService } from '@/services';
 import { useCartStore } from '@/store';
-import { ShoppingCart, MapPin, Truck, Tag, ArrowLeft, Check } from 'lucide-react';
+import { ShoppingCart, MapPin, Truck, Tag, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 const statusConfig = {
-  in_stock: { label: 'In Stock', className: 'bg-success/10 text-success border-success/20' },
-  limited_stock: { label: 'Limited Stock', className: 'bg-warning/10 text-warning border-warning/20' },
+  in_stock: { label: 'In Stock', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+  limited_stock: { label: 'Limited Stock', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
   out_of_stock: { label: 'Out of Stock', className: 'bg-destructive/10 text-destructive border-destructive/20' },
 };
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [dealers, setDealers] = useState<Dealer[]>([]);
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore(s => s.addItem);
 
-  useEffect(() => {
-    if (!id) return;
-    productService.getProduct(id).then(p => setProduct(p || null));
-    productService.getDealers(id).then(setDealers);
-    couponService.getCoupons().then(setCoupons);
-  }, [id]);
+  const { data, isLoading } = useQuery({
+    queryKey: ['buyer-product', id],
+    queryFn: () => productService.getProduct(id as string),
+    enabled: !!id
+  });
 
-  if (!product) return <div className="container py-20 text-center text-muted-foreground">Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="container py-20 flex flex-col items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading product details...</p>
+      </div>
+    );
+  }
 
-  const status = statusConfig[product.availability];
+  if (!data || !data.product) {
+    return (
+      <div className="container py-20 text-center">
+        <p className="text-muted-foreground font-heading font-semibold text-lg">Product not found</p>
+        <Link to="/" className="text-primary hover:underline mt-2 inline-block">Return to Catalog</Link>
+      </div>
+    );
+  }
+
+  const { product, availableStock, dealer, coupons } = data;
+  const availability = availableStock > 10 ? 'in_stock' : availableStock > 0 ? 'limited_stock' : 'out_of_stock';
+  const status = statusConfig[availability];
 
   const handleAddToCart = () => {
-    addItem(product, quantity);
+    // Map to frontend Product type for store
+    const cartProduct = {
+        ...product,
+        availability,
+        stockCount: availableStock,
+        images: ['https://placehold.co/600x600/png?text=' + product.name.replace(/ /g, '+')],
+        estimatedDelivery: '2-3 Days'
+    };
+    addItem(cartProduct, quantity);
     toast.success(`${product.name} added to cart`);
   };
 
@@ -47,7 +69,11 @@ export default function ProductDetailPage() {
       <div className="grid md:grid-cols-2 gap-8">
         {/* Image */}
         <div className="aspect-square rounded-2xl bg-muted flex items-center justify-center overflow-hidden border border-border">
-          <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover" />
+          <img 
+            src={'https://placehold.co/600x600/png?text=' + product.name.replace(/ /g, '+')} 
+            alt={product.name} 
+            className="h-full w-full object-cover" 
+          />
         </div>
 
         {/* Details */}
@@ -60,15 +86,17 @@ export default function ProductDetailPage() {
 
           <p className="font-heading text-3xl font-bold text-primary">₹{product.price.toFixed(2)}</p>
 
-          <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {product.description || `High-quality ${product.category} for your next project. Durable, aesthetic, and reliable.`}
+          </p>
 
           {/* Specs */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              ['Finish', product.finish],
-              ['Color', product.color],
-              ['Size', product.size],
-              ['Stock', `${product.stockCount} units`],
+              ['Finish', product.finish || 'N/A'],
+              ['Color', product.color || 'N/A'],
+              ['Category', product.category],
+              ['Available', `${availableStock} units`],
             ].map(([label, value]) => (
               <div key={label} className="rounded-lg bg-muted p-3">
                 <p className="text-xs text-muted-foreground">{label}</p>
@@ -80,7 +108,7 @@ export default function ProductDetailPage() {
           {/* Delivery */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Truck className="h-4 w-4 text-primary" />
-            Estimated delivery: {product.estimatedDelivery}
+            Estimated delivery: 2-3 Days
           </div>
 
           {/* Add to cart */}
@@ -92,8 +120,8 @@ export default function ProductDetailPage() {
             </div>
             <Button
               onClick={handleAddToCart}
-              disabled={product.availability === 'out_of_stock'}
-              className="flex-1"
+              disabled={availability === 'out_of_stock'}
+              className="flex-1 font-bold h-12"
               size="lg"
             >
               <ShoppingCart className="h-4 w-4 mr-2" /> Add to Cart
@@ -101,40 +129,39 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Dealers */}
-          <div>
-            <h3 className="font-heading font-semibold text-sm flex items-center gap-1.5 mb-3">
-              <MapPin className="h-4 w-4 text-primary" /> Nearest Dealers
-            </h3>
-            <div className="space-y-2">
-              {dealers.map(d => (
-                <div key={d.id} className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
-                  <div>
-                    <p className="font-medium">{d.name}</p>
-                    <p className="text-xs text-muted-foreground">{d.location} · {d.distance}</p>
-                  </div>
-                  <Badge variant="outline">{d.stock} in stock</Badge>
+          {dealer && (
+            <div>
+                <h3 className="font-heading font-semibold text-sm flex items-center gap-1.5 mb-3">
+                <MapPin className="h-4 w-4 text-primary" /> Fulfilled by nearest dealer
+                </h3>
+                <div className="rounded-lg border border-border p-3 text-sm">
+                    <p className="font-medium">{dealer.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{dealer.address}</p>
                 </div>
-              ))}
             </div>
-          </div>
+          )}
 
           {/* Coupons */}
-          <div>
-            <h3 className="font-heading font-semibold text-sm flex items-center gap-1.5 mb-3">
-              <Tag className="h-4 w-4 text-accent" /> Available Coupons
-            </h3>
-            <div className="space-y-2">
-              {coupons.filter(c => c.active).map(c => (
-                <div key={c.id} className="flex items-center gap-3 rounded-lg border border-dashed border-accent/40 bg-accent/5 p-3 text-sm">
-                  <Check className="h-4 w-4 text-accent shrink-0" />
-                  <div>
-                    <span className="font-mono font-semibold text-accent">{c.code}</span>
-                    <span className="text-muted-foreground ml-2">{c.description}</span>
-                  </div>
+          {coupons && coupons.length > 0 && (
+            <div>
+                <h3 className="font-heading font-semibold text-sm flex items-center gap-1.5 mb-3">
+                <Tag className="h-4 w-4 text-amber-500" /> Applicable Coupons
+                </h3>
+                <div className="space-y-2">
+                {coupons.map((c: any) => (
+                    <div key={c._id} className="flex items-center gap-3 rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+                    <Check className="h-4 w-4 text-amber-600 shrink-0" />
+                    <div>
+                        <span className="font-mono font-bold text-amber-700 uppercase tracking-wider">{c.code}</span>
+                        <span className="text-muted-foreground ml-2">
+                            {c.discountValue}{c.discountType === 'percentage' ? '%' : '₹'} off
+                        </span>
+                    </div>
+                    </div>
+                ))}
                 </div>
-              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

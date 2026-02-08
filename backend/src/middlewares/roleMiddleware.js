@@ -1,33 +1,40 @@
-const checkRole = (requiredPermissions) => {
+const checkRole = (requiredPermissionsOrRoles) => {
   return (req, res, next) => {
     if (!req.user || !req.user.role) {
-      return res.status(403).json({ message: 'Access denied. No role assigned.' });
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Access denied. No role assigned.' 
+      });
     }
 
-    const userPermissions = req.user.role.permissions || [];
+    // Role could be populated (object) or just an ID (string)
+    const role = req.user.role;
+    const userRoleName = typeof role === 'object' ? role.name : null;
+    const userPermissions = (typeof role === 'object' && role.permissions) ? role.permissions : [];
     
-    // Check if user has ALL required permissions (or just one of them? Usually 'has permission X'). 
-    // Here assume requiredPermissions is an array, and user needs at least one matching or all matching?
-    // Let's implement: User must have at least one of the permissions if multiple are passed, 
-    // OR if we pass a single string, they must have it.
-    
-    // Simplified: requiredPermissions is an array of strings. User must have at least one?
-    // Let's go with: User must have permission to access.
-    
-    // If requiredPermissions is empty, allow.
-    if (!requiredPermissions || requiredPermissions.length === 0) {
+    // If requiredPermissionsOrRoles is empty, allow.
+    if (!requiredPermissionsOrRoles || requiredPermissionsOrRoles.length === 0) {
       return next();
     }
 
     // Common Admin Override
-    if (req.user.role.name === 'Company Admin' || req.user.role.name === 'Super Admin') {
+    if (userRoleName === 'Company Admin' || userRoleName === 'Super Admin') {
       return next();
     }
 
-    const hasPermission = requiredPermissions.some(permission => userPermissions.includes(permission));
+    // Check if user's role name matches OR if they have any of the specific permissions
+    // Also support checking against role ID string just in case
+    const hasAccess = requiredPermissionsOrRoles.some(item => 
+        (userRoleName && item.toLowerCase() === userRoleName.toLowerCase()) || 
+        userPermissions.includes(item) ||
+        (typeof role === 'string' && role === item)
+    );
 
-    if (!hasPermission) {
-      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    if (!hasAccess) {
+      return res.status(403).json({ 
+        success: false, 
+        message: `Access denied. Sufficient permissions not found.` 
+      });
     }
 
     next();

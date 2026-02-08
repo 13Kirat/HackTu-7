@@ -9,16 +9,17 @@ export default function CouponInput() {
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { subtotal, setAppliedCoupon } = useCartStore();
+  const { items, setAppliedCoupon } = useCartStore();
 
   const handleApply = async () => {
     if (!code.trim()) return;
     setLoading(true);
-    const result = await couponService.applyCoupon(code.trim(), subtotal());
+    const cartItems = items.map(i => ({ productId: i.product.id, quantity: i.quantity }));
+    const result = await couponService.applyCoupon(code.trim(), cartItems);
     setMessage(result.message);
     setIsError(!result.valid);
     if (result.valid) {
-      setAppliedCoupon({ code: code.trim(), discount: result.discount });
+      setAppliedCoupon({ code: code.trim(), discount: result.discountAmount });
     }
     setLoading(false);
   };

@@ -77,11 +77,11 @@ export default function LoginPage() {
           <Link to="/register" className="text-primary font-medium hover:underline">Create one</Link>
         </p>
 
-        <div className="mt-6 p-3 rounded-lg bg-muted/50 border border-border">
+        {/* <div className="mt-6 p-3 rounded-lg bg-muted/50 border border-border">
           <p className="text-xs text-muted-foreground text-center">
             <span className="font-medium text-foreground">Demo:</span> rajesh.kumar@example.com / password123
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
