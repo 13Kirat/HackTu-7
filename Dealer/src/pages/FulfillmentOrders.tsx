@@ -101,7 +101,7 @@ const FulfillmentOrders = () => {
                 <Select value={productId} onValueChange={setProductId}>
                   <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                   <SelectContent>
-                    {products?.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — ${p.price}</SelectItem>)}
+                    {products?.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — ₹{p.price}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -111,7 +111,7 @@ const FulfillmentOrders = () => {
               </div>
               {total > 0 && (
                 <div className="p-3 rounded-lg bg-muted">
-                  <p className="text-sm font-medium">Estimated Total: <span className="text-primary">${total.toLocaleString()}</span></p>
+                  <p className="text-sm font-medium">Estimated Total: <span className="text-primary">₹{total.toLocaleString()}</span></p>
                 </div>
               )}
             </div>
@@ -152,7 +152,7 @@ const FulfillmentOrders = () => {
                         <TableCell>{order.date}</TableCell>
                         <TableCell>{order.warehouse}</TableCell>
                         <TableCell className="max-w-48 truncate">{order.products.map((p: any) => p.productName).join(", ")}</TableCell>
-                        <TableCell className="text-right font-medium">${order.totalAmount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium text-xs">₹{order.totalAmount.toLocaleString()}</TableCell>
                         <TableCell><StatusBadge status={order.status} /></TableCell>
                     </TableRow>
                     ))}

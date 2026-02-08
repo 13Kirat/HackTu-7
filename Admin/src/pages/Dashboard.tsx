@@ -117,7 +117,7 @@ export default function Dashboard() {
               Active Alerts
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[260px] overflow-y-auto">
+          <CardContent className="space-y-3 max-h-[260px] overflow-y-auto border-t pt-4 mt-2">
             {!alerts || alerts.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-10">No active alerts.</p>
             ) : (

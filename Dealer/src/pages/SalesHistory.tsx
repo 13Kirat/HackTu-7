@@ -91,7 +91,7 @@ const SalesHistory = () => {
                 <Select value={productId} onValueChange={setProductId}>
                   <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                   <SelectContent>
-                    {products?.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — ${p.price}</SelectItem>)}
+                    {products?.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — ₹{p.price}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -101,7 +101,7 @@ const SalesHistory = () => {
               </div>
               {total > 0 && (
                 <div className="p-3 rounded-lg bg-muted border border-primary/10">
-                  <p className="text-sm font-medium">Bill Amount: <span className="text-primary font-bold">${total.toLocaleString()}</span></p>
+                  <p className="text-sm font-medium">Bill Amount: <span className="text-primary font-bold">₹{total.toLocaleString()}</span></p>
                   <p className="text-[10px] text-muted-foreground mt-1 uppercase">Stock will be deducted immediately upon confirmation.</p>
                 </div>
               )}
@@ -118,7 +118,7 @@ const SalesHistory = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} icon={DollarSign} trend="+18.2%" />
+        <StatCard title="Total Revenue" value={`₹${stats.totalRevenue.toLocaleString()}`} icon={DollarSign} trend="+18.2%" />
         <StatCard title="Top Product" value={stats.topProduct} icon={TrendingUp} />
         <StatCard title="Units Sold" value={stats.totalUnits.toLocaleString()} icon={Package} trend="+245 this week" />
       </div>
@@ -148,7 +148,7 @@ const SalesHistory = () => {
                     <TableRow key={s.id}>
                         <TableCell className="font-medium text-sm">{s.productName}</TableCell>
                         <TableCell className="text-right text-xs">{s.quantitySold}</TableCell>
-                        <TableCell className="text-right font-medium text-sm">${s.revenue.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium text-sm">₹{s.revenue.toLocaleString()}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{s.date}</TableCell>
                     </TableRow>
                     ))}

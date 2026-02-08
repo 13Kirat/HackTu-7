@@ -165,7 +165,7 @@ export default function ProductsPage() {
     { key: "name", header: "Name" },
     { key: "sku", header: "SKU", render: (p: Product) => <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{p.sku}</code> },
     { key: "category", header: "Category" },
-    { key: "basePrice", header: "Price", render: (p: Product) => `$${p.basePrice}` },
+    { key: "basePrice", header: "Price", render: (p: Product) => `₹${p.basePrice}` },
     { key: "actions", header: "Actions", render: (p: Product) => (
       <div className="flex gap-1">
         <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Edit2 className="h-4 w-4" /></Button>
@@ -210,7 +210,7 @@ export default function ProductsPage() {
         </DialogContent>
       </Dialog>
 
-      {isLoading ? (
+      {productsLoading ? (
         <div className="flex justify-center p-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       ) : (
         <DataTable data={products || []} columns={columns} searchKey="name" searchPlaceholder="Search products..." />

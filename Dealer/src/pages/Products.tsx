@@ -85,7 +85,7 @@ const Products = () => {
                         <TableCell className="font-medium">{p.name}</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-xs">{p.sku}</TableCell>
                         <TableCell>{p.category}</TableCell>
-                        <TableCell className="text-right font-medium">${p.price.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium">₹{p.price.toLocaleString()}</TableCell>
                         <TableCell className={`text-right ${p.stock < 50 ? "text-destructive font-medium" : ""}`}>{p.stock}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{p.warehouse}</TableCell>
                         <TableCell>

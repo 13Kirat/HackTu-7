@@ -54,7 +54,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Inventory Value" value={`$${totalValue.toLocaleString()}`} icon={DollarSign} trend="+12.5% from last month" />
+        <StatCard title="Inventory Value" value={`₹${totalValue.toLocaleString()}`} icon={DollarSign} trend="+12.5% from last month" />
         <StatCard title="Products in Stock" value={inventory?.length.toString() || "0"} icon={Package} trend="+3 new items" />
         <StatCard title="Pending Orders" value={pendingOrders.toString()} icon={ShoppingCart} variant="warning" />
         <StatCard title="Active Alerts" value={activeAlerts.toString()} icon={AlertTriangle} variant="destructive" />
@@ -86,7 +86,7 @@ const Dashboard = () => {
                     <TableRow key={order.id}>
                         <TableCell className="font-mono text-xs truncate max-w-[100px]">{order.id}</TableCell>
                         <TableCell>{order.date}</TableCell>
-                        <TableCell className="text-right font-medium">${order.totalAmount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium text-xs">₹{order.totalAmount.toLocaleString()}</TableCell>
                         <TableCell><StatusBadge status={order.status} /></TableCell>
                     </TableRow>
                     ))}

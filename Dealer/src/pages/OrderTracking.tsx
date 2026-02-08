@@ -11,6 +11,7 @@ import { Loader2, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { shipmentService } from "@/services/shipmentService";
+import { Separator } from "@/components/ui/separator";
 
 const OrderTracking = () => {
   const queryClient = useQueryClient();
@@ -72,7 +73,7 @@ const OrderTracking = () => {
                         <TableCell className="font-mono text-xs text-primary font-medium">{order.id}</TableCell>
                         <TableCell className="capitalize text-xs">{order.type}</TableCell>
                         <TableCell className="text-xs">{order.date}</TableCell>
-                        <TableCell className="text-right font-medium text-xs">${order.totalAmount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium text-xs">₹{order.totalAmount.toLocaleString()}</TableCell>
                         <TableCell className="text-xs">{order.estimatedDelivery ?? "—"}</TableCell>
                         <TableCell><StatusBadge status={order.status} /></TableCell>
                     </TableRow>
@@ -94,7 +95,7 @@ const OrderTracking = () => {
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div><span className="text-muted-foreground block mb-1">Source</span> <span className="font-medium">{selected.dealerName}</span></div>
                 <div><span className="text-muted-foreground block mb-1">Status</span> <StatusBadge status={selected.status} /></div>
-                <div><span className="text-muted-foreground block mb-1">Amount</span> <span className="font-medium">${selected.totalAmount.toLocaleString()}</span></div>
+                <div><span className="text-muted-foreground block mb-1">Amount</span> <span className="font-medium">₹{selected.totalAmount.toLocaleString()}</span></div>
                 <div><span className="text-muted-foreground block mb-1">Date</span> {selected.date}</div>
                 {selected.trackingNumber && <div className="col-span-2"><span className="text-muted-foreground block mb-1">Tracking ({selected.carrier})</span> <code className="bg-muted px-1.5 py-0.5 rounded">{selected.trackingNumber}</code></div>}
               </div>

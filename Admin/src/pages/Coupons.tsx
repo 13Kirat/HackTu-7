@@ -133,7 +133,7 @@ export default function CouponsPage() {
   const columns = [
     { key: "code", header: "Code", render: (c: Coupon) => <code className="text-xs font-bold bg-muted px-2 py-1 rounded">{c.code}</code> },
     { key: "discountType", header: "Type", render: (c: Coupon) => <span className="capitalize">{c.discountType}</span> },
-    { key: "value", header: "Value", render: (c: Coupon) => c.discountType === "percentage" ? `${c.value}%` : `$${c.value}` },
+    { key: "value", header: "Value", render: (c: Coupon) => c.discountType === "percentage" ? `${c.value}%` : `₹${c.value}` },
     { key: "validTo", header: "Expires", render: (c: Coupon) => c.validTo ? new Date(c.validTo).toLocaleDateString() : "—" },
     { key: "active", header: "Status", render: (c: Coupon) => (
       <Badge variant={c.active ? "default" : "secondary"} className="cursor-pointer" onClick={() => toggleActive(c)}>
