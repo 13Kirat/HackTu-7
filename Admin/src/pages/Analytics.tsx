@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { analyticsService } from "@/services/analyticsService";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { salesByRegion, salesByProduct, inventory } from "@/mock/data";
+import { Loader2 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -16,14 +18,24 @@ const tooltipStyle = {
   color: "hsl(var(--foreground))",
 };
 
-// Shortage: items where available stock <= reorder level
-const shortageItems = inventory.filter((i) => i.availableStock <= i.reorderLevel);
-// Overstock: items where available stock > 3x reorder level
-const overstockItems = inventory.filter((i) => i.availableStock > i.reorderLevel * 3);
-
 export default function Analytics() {
   const [dateFrom, setDateFrom] = useState("2026-01-01");
   const [dateTo, setDateTo] = useState("2026-02-07");
+
+  const { data: salesByRegion, isLoading: regionLoading } = useQuery({
+    queryKey: ["sales-by-region"],
+    queryFn: analyticsService.getSalesByRegion,
+  });
+
+  const { data: salesByProduct, isLoading: productLoading } = useQuery({
+    queryKey: ["sales-by-product"],
+    queryFn: analyticsService.getSalesByProduct,
+  });
+
+  const { data: imbalances, isLoading: imbalanceLoading } = useQuery({
+    queryKey: ["stock-imbalances"],
+    queryFn: analyticsService.getImbalances,
+  });
 
   return (
     <div className="space-y-6">
@@ -52,30 +64,42 @@ export default function Analytics() {
         <Card>
           <CardHeader><CardTitle className="text-base">Sales by Region</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesByRegion}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="region" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="sales" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {regionLoading ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={salesByRegion}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="region" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="sales" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle className="text-base">Sales by Product</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesByProduct} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <YAxis dataKey="product" type="category" width={100} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="sales" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {productLoading ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={salesByProduct} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                  <YAxis dataKey="product" type="category" width={100} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="sales" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -86,27 +110,33 @@ export default function Analytics() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               Shortage Report
-              <Badge variant="destructive" className="text-xs">{shortageItems.length}</Badge>
+              <Badge variant="destructive" className="text-xs">{imbalances?.shortages?.length || 0}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {shortageItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No shortage items found.</p>
-            ) : (
-              <div className="space-y-3">
-                {shortageItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 p-3">
-                    <div>
-                      <p className="text-sm font-medium">{item.productName}</p>
-                      <p className="text-xs text-muted-foreground">{item.locationName}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-destructive">{item.availableStock} available</p>
-                      <p className="text-xs text-muted-foreground">Reorder at {item.reorderLevel}</p>
-                    </div>
-                  </div>
-                ))}
+            {imbalanceLoading ? (
+              <div className="flex justify-center p-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
+            ) : (
+              !imbalances || imbalances.shortages.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No shortage items found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {imbalances.shortages.map((item: any) => (
+                    <div key={item._id} className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 p-3">
+                      <div>
+                        <p className="text-sm font-medium">{item.productId?.name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">{item.locationId?.name || 'N/A'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-destructive">{item.availableStock} available</p>
+                        <p className="text-xs text-muted-foreground">Reorder at {item.reorderLevel}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
           </CardContent>
         </Card>
@@ -115,27 +145,33 @@ export default function Analytics() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               Overstock Report
-              <Badge variant="secondary" className="text-xs">{overstockItems.length}</Badge>
+              <Badge variant="secondary" className="text-xs">{imbalances?.overstock?.length || 0}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {overstockItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No overstock items found.</p>
-            ) : (
-              <div className="space-y-3">
-                {overstockItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between rounded-md border border-warning/20 bg-warning/5 p-3">
-                    <div>
-                      <p className="text-sm font-medium">{item.productName}</p>
-                      <p className="text-xs text-muted-foreground">{item.locationName}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{item.availableStock} available</p>
-                      <p className="text-xs text-muted-foreground">Reorder at {item.reorderLevel}</p>
-                    </div>
-                  </div>
-                ))}
+            {imbalanceLoading ? (
+              <div className="flex justify-center p-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
+            ) : (
+              !imbalances || imbalances.overstock.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No overstock items found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {imbalances.overstock.map((item: any) => (
+                    <div key={item._id} className="flex items-center justify-between rounded-md border border-warning/20 bg-warning/5 p-3">
+                      <div>
+                        <p className="text-sm font-medium">{item.productId?.name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">{item.locationId?.name || 'N/A'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-warning-foreground">{item.availableStock} available</p>
+                        <p className="text-xs text-muted-foreground">Excessive levels detected</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
           </CardContent>
         </Card>

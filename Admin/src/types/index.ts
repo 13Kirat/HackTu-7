@@ -78,9 +78,9 @@ export interface Forecast {
   productName: string;
   locationId: string;
   locationName: string;
-  currentStock: number;
+  currentStock?: number;
   predictedDemand: number;
-  recommendedReplenishment: number;
+  forecastDate: string;
 }
 
 export interface ForecastPoint {
