@@ -82,12 +82,14 @@ const Login = () => {
               {loading ? "Signing in…" : "Sign In"}
             </Button>
           </form>
-          {/* <p className="text-center text-sm text-muted-foreground mt-4">
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-primary font-medium hover:underline">
-              Sign up
-            </Link>
-          </p> */}
+          <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border/50 text-[11px] space-y-2">
+            <p className="font-bold uppercase tracking-widest text-muted-foreground mb-1">Dealer Network Access</p>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Demo Dealer:</span>
+              <code className="bg-background px-1.5 py-0.5 rounded border">dealer@example.com / password123</code>
+            </div>
+            <p className="text-[9px] text-muted-foreground italic leading-tight">Use this account to manage inventory, track warehouse shipments, and generate offline bills.</p>
+          </div>
         </CardContent>
       </Card>
     </div>

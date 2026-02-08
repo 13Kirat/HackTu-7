@@ -89,10 +89,10 @@ export default function CartPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5">
+          {/* <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="font-heading font-semibold text-sm mb-3">Have a coupon?</h3>
             <CouponInput />
-          </div>
+          </div> */}
 
           <Button asChild size="lg" className="w-full">
             <Link to="/checkout">

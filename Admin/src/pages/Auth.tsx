@@ -79,6 +79,17 @@ export default function AuthPage() {
                 Sign In
               </Button>
             </form>
+            <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border/50 text-[11px] space-y-2">
+                <p className="font-bold uppercase tracking-widest text-muted-foreground mb-1">Demo Access (Admin)</p>
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Admin:</span>
+                    <code className="bg-background px-1.5 py-0.5 rounded border">admin@example.com / password123</code>
+                </div>
+                {/* <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Manager:</span>
+                    <code className="bg-background px-1.5 py-0.5 rounded border">factory@example.com / password123</code>
+                </div> */}
+            </div>
           </CardContent>
         </Card>
       </div>

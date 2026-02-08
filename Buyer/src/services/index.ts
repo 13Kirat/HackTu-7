@@ -125,6 +125,11 @@ export const orderService = {
     return { ...response.data, success: true };
   },
 
+  async getSummary(): Promise<any> {
+      const response = await api.get('/buyer/orders/summary');
+      return response.data;
+  },
+
   async getTracking(id: string): Promise<any> {
       const response = await api.get(`/buyer/orders/${id}/tracking`);
       return response.data;

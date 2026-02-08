@@ -77,11 +77,19 @@ export default function LoginPage() {
           <Link to="/register" className="text-primary font-medium hover:underline">Create one</Link>
         </p>
 
-        {/* <div className="mt-6 p-3 rounded-lg bg-muted/50 border border-border">
-          <p className="text-xs text-muted-foreground text-center">
-            <span className="font-medium text-foreground">Demo:</span> rajesh.kumar@example.com / password123
-          </p>
-        </div> */}
+        <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-3 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary/60 text-center">Demo Account Access</p>
+          <div className="space-y-2">
+            <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Normal Buyer</span>
+                <code className="text-[11px] bg-background p-2 rounded border font-mono">buyer@example.com / password123</code>
+            </div>
+            {/* <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Retail Partner</span>
+                <code className="text-[11px] bg-background p-2 rounded border font-mono">retailer@example.com / password123</code>
+            </div> */}
+          </div>
+        </div>
       </div>
     </div>
   );
