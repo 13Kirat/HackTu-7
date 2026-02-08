@@ -29,6 +29,8 @@ export interface Product {
   finish: string;
   size: string;
   basePrice: number;
+  costPrice?: number;
+  attributes?: Record<string, string>;
 }
 
 export interface InventoryItem {
@@ -108,14 +110,7 @@ export interface Role {
   id: string;
   name: string;
   description: string;
-  permissions: Record<string, Permission>;
-}
-
-export interface Permission {
-  read: boolean;
-  create: boolean;
-  update: boolean;
-  delete: boolean;
+  permissions: string[];
 }
 
 export interface Order {

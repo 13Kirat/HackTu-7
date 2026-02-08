@@ -33,6 +33,9 @@ export const productService = {
     const response = await api.put(`/products/${id}`, data);
     return response.data;
   },
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/products/${id}`);
+  },
 
   getCoupons: async (): Promise<Coupon[]> => {
     const response = await api.get("/coupons");
@@ -48,5 +51,12 @@ export const productService = {
   createCoupon: async (coupon: any): Promise<Coupon> => {
     const response = await api.post("/coupons", coupon);
     return response.data;
+  },
+  updateCoupon: async (id: string, data: any): Promise<Coupon> => {
+    const response = await api.put(`/coupons/${id}`, data);
+    return response.data;
+  },
+  deleteCoupon: async (id: string): Promise<void> => {
+    await api.delete(`/coupons/${id}`);
   },
 };

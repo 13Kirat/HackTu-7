@@ -1,13 +1,20 @@
 const User = require('../models/User');
+const Role = require('../models/Role');
 const AppError = require('../utils/AppError');
 
 const createUser = async (req, res, next) => {
-    // Re-using logic or calling authController logic.
-    // Let's implement specific admin creation logic here
     try {
-        const { name, email, password, roleId, locationId } = req.body;
+        let { name, email, password, role, locationId } = req.body;
         const userExists = await User.findOne({ email });
         if (userExists) throw new AppError('User already exists', 400);
+
+        // If role is a name string, find the ID
+        let roleId = role;
+        if (typeof role === 'string' && role.length !== 24) {
+            const foundRole = await Role.findOne({ name: role });
+            if (!foundRole) throw new AppError(`Role ${role} not found`, 404);
+            roleId = foundRole._id;
+        }
 
         const user = await User.create({
             name,
@@ -15,7 +22,7 @@ const createUser = async (req, res, next) => {
             password,
             role: roleId,
             companyId: req.user.companyId,
-            locationId
+            locationId: locationId === 'unassigned' ? null : locationId
         });
         
         res.status(201).json(user);
@@ -48,12 +55,24 @@ const updateUser = async (req, res, next) => {
         const user = await User.findOne({ _id: req.params.id, companyId: req.user.companyId });
         if (!user) throw new AppError('User not found', 404);
         
-        const { name, email, roleId, locationId, isActive } = req.body;
+        let { name, email, role, locationId, isActive } = req.body;
         
         if (name) user.name = name;
         if (email) user.email = email;
-        if (roleId) user.role = roleId;
-        if (locationId) user.locationId = locationId;
+        
+        if (role) {
+            let roleId = role;
+            if (typeof role === 'string' && role.length !== 24) {
+                const foundRole = await Role.findOne({ name: role });
+                if (foundRole) roleId = foundRole._id;
+            }
+            user.role = roleId;
+        }
+
+        if (typeof locationId !== 'undefined') {
+            user.locationId = locationId === 'unassigned' ? null : locationId;
+        }
+        
         if (typeof isActive !== 'undefined') user.isActive = isActive;
 
         await user.save();
@@ -65,15 +84,10 @@ const updateUser = async (req, res, next) => {
 
 const deleteUser = async (req, res, next) => {
     try {
-        const user = await User.findOne({ _id: req.params.id, companyId: req.user.companyId });
+        const user = await User.findOneAndDelete({ _id: req.params.id, companyId: req.user.companyId });
         if (!user) throw new AppError('User not found', 404);
         
-        // Soft delete usually, but here request says Deactivate or Delete.
-        // Let's soft delete by setting isActive: false if deleteUser means deactivate, or remove.
-        // Prompt says "Deactivate user".
-        user.isActive = false;
-        await user.save();
-        res.json({ message: 'User deactivated' });
+        res.json({ message: 'User deleted successfully' });
     } catch (error) {
         next(error);
     }
