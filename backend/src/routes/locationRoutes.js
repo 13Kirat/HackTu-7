@@ -8,10 +8,10 @@ const { locationSchemas } = require('../utils/validation');
 
 router.use(protect);
 
-router.post('/', checkRole(['manage_locations', 'admin']), validate(locationSchemas.createLocation), createLocation);
+router.post('/', checkRole(['admin']), validate(locationSchemas.createLocation), createLocation);
 router.get('/', getLocations);
 router.get('/:id', getLocation);
-router.put('/:id', checkRole(['manage_locations', 'admin']), updateLocation);
-router.delete('/:id', checkRole(['manage_locations', 'admin']), deleteLocation);
+router.put('/:id', checkRole(['admin']), updateLocation);
+router.delete('/:id', checkRole(['admin']), deleteLocation);
 
 module.exports = router;

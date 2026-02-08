@@ -17,6 +17,8 @@ export default function LocationsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   
   // Form state
   const [name, setName] = useState("");
@@ -47,6 +49,24 @@ export default function LocationsPage() {
     }
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => locationService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["locations"] });
+      toast({ title: "Location Updated", description: "Location details modified successfully." });
+      setEditOpen(false);
+      setEditingLocation(null);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Update Failed", 
+        description: error.response?.data?.message || "Failed to update location", 
+        variant: "destructive" 
+      });
+    }
+  });
+
   const resetForm = () => {
     setName("");
     setType("warehouse");
@@ -71,6 +91,32 @@ export default function LocationsPage() {
     });
   };
 
+  const handleUpdate = () => {
+    if (!editingLocation || !name || !address || !lat || !lng) return;
+    updateMutation.mutate({
+      id: editingLocation.id,
+      data: {
+        name,
+        type,
+        address,
+        coordinates: {
+          lat: parseFloat(lat),
+          lng: Number(lng)
+        }
+      }
+    });
+  };
+
+  const openEdit = (l: Location) => {
+    setEditingLocation(l);
+    setName(l.name);
+    setType(l.type);
+    setAddress(l.address);
+    setLat(l.coordinates?.lat.toString() || "");
+    setLng(l.coordinates?.lng.toString() || "");
+    setEditOpen(true);
+  };
+
   const columns = [
     { key: "name", header: "Name" },
     { key: "type", header: "Type", render: (l: Location) => (
@@ -83,7 +129,7 @@ export default function LocationsPage() {
       </span>
     )},
     { key: "actions", header: "Actions", render: (l: Location) => (
-      <Button variant="ghost" size="sm" onClick={() => toast({ title: "Info", description: "Edit functionality coming soon" })}>
+      <Button variant="ghost" size="sm" onClick={() => openEdit(l)}>
         Edit
       </Button>
     )},
@@ -136,6 +182,48 @@ export default function LocationsPage() {
           </DialogContent>
         </Dialog>
       </PageHeader>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { setEditOpen(open); if (!open) { setEditingLocation(null); resetForm(); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Location</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={type} onValueChange={(v: LocationType) => setType(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="factory">Factory</SelectItem>
+                  <SelectItem value="warehouse">Warehouse</SelectItem>
+                  <SelectItem value="dealer">Dealer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Latitude</Label>
+                <Input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Longitude</Label>
+                <Input type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} />
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleUpdate} disabled={updateMutation.isPending}>
+              {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-10">
