@@ -3,8 +3,7 @@ import type { InventoryItem, Product } from "@/types";
 
 export const inventoryService = {
   getInventory: async (): Promise<InventoryItem[]> => {
-    const response = await api.get("/inventory/company"); // Dealers see own location or filter?
-    // Actually backend handles companyId. If user is Dealer, they see their own inventory.
+    const response = await api.get("/inventory/company");
     return response.data.map((item: any) => ({
       id: item._id,
       productId: item.product?._id,
@@ -13,21 +12,29 @@ export const inventoryService = {
       totalStock: item.totalStock,
       reservedStock: item.reservedStock,
       availableStock: item.availableStock,
-      reorderLevel: 10 // Backend doesn't return this in agg, using default
+      reorderLevel: 10
     }));
   },
   
   getProducts: async (): Promise<Product[]> => {
-    const response = await api.get("/products");
-    return response.data.map((p: any) => ({
+    const [prodRes, invRes] = await Promise.all([
+        api.get("/products"),
+        api.get("/inventory/company")
+    ]);
+
+    const inventoryMap = Object.fromEntries(
+        invRes.data.map((i: any) => [i.product?._id, i.availableStock])
+    );
+
+    return prodRes.data.map((p: any) => ({
       id: p._id,
       name: p.name,
       sku: p.sku,
       price: p.price,
       category: p.category,
-      stock: 0,
-      warehouse: "Main",
-      schemes: []
+      stock: inventoryMap[p._id] || 0,
+      warehouse: "Regional Hub", // Descriptive placeholder
+      schemes: p.schemes || []
     }));
   },
 
@@ -41,8 +48,8 @@ export const inventoryService = {
       price: p.price,
       category: p.category,
       stock: 0,
-      warehouse: "Main",
-      schemes: []
+      warehouse: "Regional Hub",
+      schemes: p.schemes || []
     };
   },
 

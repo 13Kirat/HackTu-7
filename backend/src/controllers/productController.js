@@ -3,7 +3,7 @@ const AppError = require('../utils/AppError');
 
 const createProduct = async (req, res, next) => {
   try {
-    const { name, sku, description, category, price, costPrice, attributes } = req.body;
+    const { name, sku, description, category, price, costPrice, attributes, schemes } = req.body;
     const product = await Product.create({
       name,
       sku,
@@ -12,6 +12,7 @@ const createProduct = async (req, res, next) => {
       price,
       costPrice,
       attributes,
+      schemes,
       companyId: req.user.companyId
     });
     res.status(201).json(product);
@@ -44,7 +45,16 @@ const updateProduct = async (req, res, next) => {
     const product = await Product.findOne({ _id: req.params.id, companyId: req.user.companyId });
     if (!product) throw new AppError('Product not found', 404);
 
-    Object.assign(product, req.body);
+    const { name, sku, description, category, price, costPrice, attributes, schemes } = req.body;
+    if (name) product.name = name;
+    if (sku) product.sku = sku;
+    if (description) product.description = description;
+    if (category) product.category = category;
+    if (price) product.price = price;
+    if (costPrice) product.costPrice = costPrice;
+    if (attributes) product.attributes = attributes;
+    if (schemes) product.schemes = schemes;
+
     await product.save();
     res.json(product);
   } catch (error) {

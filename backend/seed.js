@@ -166,9 +166,33 @@ const seedData = async () => {
 
     // 6. Create Products
     const productsData = [
-      { name: 'Ultra HD Monitor 32"', sku: 'MON-32-UHD', price: 499, costPrice: 250, companyId: company._id, category: 'Hardware' },
-      { name: 'Mechanical Keyboard RGB', sku: 'KB-RGB-MECH', price: 129, costPrice: 60, companyId: company._id, category: 'Accessories' },
-      { name: 'Wireless Pro Mouse', sku: 'MSE-WRLS-PRO', price: 89, costPrice: 40, companyId: company._id, category: 'Accessories' }
+      { 
+        name: 'Ultra HD Monitor 32"', 
+        sku: 'MON-32-UHD', 
+        price: 499, 
+        costPrice: 250, 
+        companyId: company._id, 
+        category: 'Hardware',
+        schemes: ['Buy 5 Get 1 Free', '10% Dealer Margin']
+      },
+      { 
+        name: 'Mechanical Keyboard RGB', 
+        sku: 'KB-RGB-MECH', 
+        price: 129, 
+        costPrice: 60, 
+        companyId: company._id, 
+        category: 'Accessories',
+        schemes: ['Bundle with Mouse for 5% off']
+      },
+      { 
+        name: 'Wireless Pro Mouse', 
+        sku: 'MSE-WRLS-PRO', 
+        price: 89, 
+        costPrice: 40, 
+        companyId: company._id, 
+        category: 'Accessories',
+        schemes: ['Bulk Discount 10+ units']
+      }
     ];
     const products = await Product.insertMany(productsData);
     console.log('Products created');

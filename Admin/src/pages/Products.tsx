@@ -27,6 +27,7 @@ export default function ProductsPage() {
   const [size, setSize] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
+  const [schemes, setSchemes] = useState("");
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["products"],
@@ -72,19 +73,20 @@ export default function ProductsPage() {
   });
 
   const resetForm = () => {
-    setName(""); setSku(""); setCategory(""); setColor(""); setFinish(""); setSize(""); setBasePrice(""); setCostPrice("");
+    setName(""); setSku(""); setCategory(""); setColor(""); setFinish(""); setSize(""); setBasePrice(""); setCostPrice(""); setSchemes("");
   };
 
   const handleCreate = () => {
     if (!name || !sku || !category || !basePrice) {
-        toast({ title: "Validation Error", description: "Please fill in all required fields", variant: "destructive" });
+        toast({ title: "Validation Error", description: "All fields are required", variant: "destructive" });
         return;
     }
     createMutation.mutate({
       name, sku, category,
       price: Number(basePrice),
       costPrice: Number(costPrice) || 0,
-      attributes: { color, finish, size }
+      attributes: { color, finish, size },
+      schemes: schemes.split(',').map(s => s.trim()).filter(s => s !== "")
     });
   };
 
@@ -96,7 +98,8 @@ export default function ProductsPage() {
         name, sku, category,
         price: Number(basePrice),
         costPrice: Number(costPrice) || 0,
-        attributes: { color, finish, size }
+        attributes: { color, finish, size },
+        schemes: schemes.split(',').map(s => s.trim()).filter(s => s !== "")
       }
     });
   };
@@ -108,6 +111,7 @@ export default function ProductsPage() {
     setCategory(product.category);
     setBasePrice(String(product.basePrice));
     setCostPrice(String(product.costPrice || "0"));
+    setSchemes((product as any).schemes?.join(", ") || "");
     
     // Attributes handling
     if (product.attributes) {
@@ -150,7 +154,10 @@ export default function ProductsPage() {
         <div className="space-y-2"><Label>Size</Label><Input placeholder="60x60cm" value={size} onChange={(e) => setSize(e.target.value)} /></div>
         <div className="space-y-2"><Label>Price</Label><Input type="number" placeholder="0" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} /></div>
       </div>
-      <div className="space-y-2"><Label>Cost Price (Internal)</Label><Input type="number" placeholder="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} /></div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2"><Label>Cost Price (Internal)</Label><Input type="number" placeholder="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} /></div>
+        <div className="space-y-2"><Label>Schemes (Comma separated)</Label><Input placeholder="Buy 5 Get 1, 10% Off" value={schemes} onChange={(e) => setSchemes(e.target.value)} /></div>
+      </div>
     </>
   );
 
@@ -203,7 +210,7 @@ export default function ProductsPage() {
         </DialogContent>
       </Dialog>
 
-      {productsLoading ? (
+      {isLoading ? (
         <div className="flex justify-center p-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       ) : (
         <DataTable data={products || []} columns={columns} searchKey="name" searchPlaceholder="Search products..." />
