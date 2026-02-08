@@ -10,7 +10,8 @@ export const dealerService = {
       name: u.name,
       email: u.email,
       location: u.address || "Unassigned",
-      phone: u.phone || ""
+      phone: u.phone || "",
+      settings: u.settings
     };
   },
   
@@ -20,7 +21,8 @@ export const dealerService = {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        address: data.location
+        address: data.location,
+        settings: data.settings
     };
     const response = await api.put("/auth/profile", payload);
     const u = response.data;
@@ -29,7 +31,8 @@ export const dealerService = {
       name: u.name,
       email: u.email,
       location: u.address || "Unassigned",
-      phone: u.phone || ""
+      phone: u.phone || "",
+      settings: u.settings
     };
   },
 

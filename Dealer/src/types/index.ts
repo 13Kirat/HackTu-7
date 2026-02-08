@@ -85,6 +85,12 @@ export interface Dealer {
   email: string;
   location: string;
   phone: string;
+  settings?: {
+    lowStockAlerts: boolean;
+    orderUpdates: boolean;
+    newRegistrations: boolean;
+    systemMaintenance: boolean;
+  };
 }
 
 export type NotificationType = "order" | "stock" | "alert" | "system" | "promotion";
