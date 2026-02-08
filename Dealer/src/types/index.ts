@@ -35,13 +35,15 @@ export interface TimelineEvent {
 export interface Order {
   id: string;
   type: "fulfillment" | "dealer";
-  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled" | "failed";
   dealerName: string;
   targetDealer?: string;
   products: OrderProduct[];
   totalAmount: number;
   date: string;
   estimatedDelivery?: string;
+  trackingNumber?: string;
+  carrier?: string;
   warehouse?: string;
   commission?: number;
   timeline?: TimelineEvent[];
