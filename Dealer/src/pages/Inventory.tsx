@@ -1,21 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle, Loader2 } from "lucide-react";
 import { inventoryService } from "@/services/inventoryService";
 import type { InventoryItem } from "@/types";
 
 const Inventory = () => {
-  const [items, setItems] = useState<InventoryItem[]>([]);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    inventoryService.getInventory().then(setItems);
-  }, []);
+  const { data: items, isLoading } = useQuery({
+    queryKey: ["dealer-inventory"],
+    queryFn: inventoryService.getInventory,
+  });
 
-  const filtered = items.filter(i =>
+  const filtered = items?.filter(i =>
     i.productName.toLowerCase().includes(search.toLowerCase()) || i.sku.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -34,45 +35,51 @@ const Inventory = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Reserved</TableHead>
-                  <TableHead className="text-right">Available</TableHead>
-                  <TableHead className="text-right">Reorder Level</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(item => {
-                  const isLow = item.availableStock <= item.reorderLevel;
-                  return (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.productName}</TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-xs">{item.sku}</TableCell>
-                      <TableCell className="text-right">{item.totalStock}</TableCell>
-                      <TableCell className="text-right">{item.reservedStock}</TableCell>
-                      <TableCell className={`text-right font-medium ${isLow ? "text-destructive" : ""}`}>{item.availableStock}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{item.reorderLevel}</TableCell>
-                      <TableCell>
-                        {isLow ? (
-                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 gap-1">
-                            <AlertTriangle className="h-3 w-3" /> Low Stock
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-success/10 text-success border-success/20">In Stock</Badge>
-                        )}
-                      </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          ) : !filtered || filtered.length === 0 ? (
+            <div className="py-20 text-center text-muted-foreground">No inventory records found.</div>
+          ) : (
+            <div className="overflow-x-auto">
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Reserved</TableHead>
+                    <TableHead className="text-right">Available</TableHead>
+                    <TableHead className="text-right">Reorder Level</TableHead>
+                    <TableHead>Status</TableHead>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                    {filtered.map(item => {
+                    const isLow = item.availableStock <= item.reorderLevel;
+                    return (
+                        <TableRow key={item.id}>
+                        <TableCell className="font-medium text-sm">{item.productName}</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-xs">{item.sku}</TableCell>
+                        <TableCell className="text-right text-xs">{item.totalStock}</TableCell>
+                        <TableCell className="text-right text-xs">{item.reservedStock}</TableCell>
+                        <TableCell className={`text-right font-medium ${isLow ? "text-destructive" : ""}`}>{item.availableStock}</TableCell>
+                        <TableCell className="text-right text-muted-foreground text-xs">{item.reorderLevel}</TableCell>
+                        <TableCell>
+                            {isLow ? (
+                            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 gap-1 text-[10px] uppercase">
+                                <AlertTriangle className="h-3 w-3" /> Low Stock
+                            </Badge>
+                            ) : (
+                            <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[10px] uppercase">In Stock</Badge>
+                            )}
+                        </TableCell>
+                        </TableRow>
+                    );
+                    })}
+                </TableBody>
+                </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import api from "@/lib/api";
 import type { Dealer, Sale } from "@/types";
+import { orderService } from "./orderService";
 
 export const dealerService = {
   getCurrentDealer: async (): Promise<Dealer> => {
@@ -16,7 +17,6 @@ export const dealerService = {
   },
   
   updateProfile: async (data: Partial<Dealer>): Promise<Dealer> => {
-    // Backend expects address instead of location
     const payload = {
         name: data.name,
         email: data.email,
@@ -37,7 +37,27 @@ export const dealerService = {
   },
 
   getSalesHistory: async (): Promise<Sale[]> => {
-    // Placeholder for real API
-    return [];
+    // Sales are logically 'customer_order' types that are shipped/delivered
+    const orders = await orderService.getOrders();
+    // Filter for non-cancelled, non-dealer internal orders (if applicable)
+    // For now, any order with amount is a 'sale' for the dealer's dashboard purposes
+    const sales: Sale[] = [];
+    
+    orders.forEach(order => {
+        if (['shipped', 'delivered'].includes(order.status)) {
+            order.products.forEach((p, idx) => {
+                sales.push({
+                    id: `${order.id}-${idx}`,
+                    productId: "", // Missing from order product type currently
+                    productName: p.productName,
+                    quantitySold: p.quantity,
+                    revenue: p.quantity * p.price,
+                    date: order.date
+                });
+            });
+        }
+    });
+
+    return sales;
   },
 };
