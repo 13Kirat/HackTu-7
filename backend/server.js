@@ -36,6 +36,7 @@ app.use(`${apiPrefix}/orders`, require('./src/routes/orderRoutes'));
 app.use(`${apiPrefix}/shipments`, require('./src/routes/shipmentRoutes'));
 app.use(`${apiPrefix}/coupons`, require('./src/routes/couponRoutes'));
 app.use(`${apiPrefix}/alerts`, require('./src/routes/alertRoutes'));
+app.use(`${apiPrefix}/notifications`, require('./src/routes/notificationRoutes'));
 app.use(`${apiPrefix}/analytics`, require('./src/routes/analyticsRoutes'));
 app.use(`${apiPrefix}/ai`, require('./src/routes/aiRoutes'));
 app.use(`${apiPrefix}/buyer`, require('./src/routes/buyerRoutes'));
