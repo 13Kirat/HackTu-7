@@ -6,9 +6,11 @@ export const orderService = {
     const response = await api.get("/orders");
     return response.data.map((o: any) => ({
       id: o._id,
-      type: o.orderType === 'dealer_order' ? 'dealer' : 'fulfillment',
+      // Map backend status/types to frontend-friendly logic
+      type: o.fromLocationId?.type === 'dealer' ? 'dealer' : 'fulfillment',
       status: o.status,
-      dealerName: o.customerId?.name || "Customer",
+      dealerName: o.fromLocationId?.name || "Manufacturer",
+      targetDealer: o.toLocationId?.name || "N/A",
       totalAmount: o.totalAmount,
       date: new Date(o.createdAt).toLocaleDateString(),
       products: o.items.map((i: any) => ({
@@ -24,9 +26,10 @@ export const orderService = {
     const o = response.data;
     return {
       id: o._id,
-      type: o.orderType === 'dealer_order' ? 'dealer' : 'fulfillment',
+      type: o.fromLocationId?.type === 'dealer' ? 'dealer' : 'fulfillment',
       status: o.status,
-      dealerName: o.customerId?.name || "Customer",
+      dealerName: o.fromLocationId?.name || "Manufacturer",
+      targetDealer: o.toLocationId?.name || "N/A",
       totalAmount: o.totalAmount,
       date: new Date(o.createdAt).toLocaleDateString(),
       products: o.items.map((i: any) => ({
@@ -39,15 +42,17 @@ export const orderService = {
 
   getFulfillmentOrders: async (): Promise<Order[]> => {
     const orders = await orderService.getOrders();
-    return orders.filter(o => o.type === "fulfillment");
+    // Orders from Warehouse/Factory to Dealer
+    return orders.filter(o => o.type === "fulfillment"); 
   },
 
   getDealerOrders: async (): Promise<Order[]> => {
     const orders = await orderService.getOrders();
+    // Orders between dealers
     return orders.filter(o => o.type === "dealer");
   },
 
-  createOrder: async (data: any): Promise<Order> => {
+  createDealerOrder: async (data: { fromLocationId: string; toLocationId?: string; items: { productId: string; quantity: number }[] }): Promise<Order> => {
     const response = await api.post("/orders/dealer", data);
     return response.data;
   },

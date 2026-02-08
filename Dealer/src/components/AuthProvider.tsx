@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: string;
+  locationId?: string;
 }
 
 interface AuthContextType {
@@ -38,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const roleName = userData.role?.name || userData.role;
       const allowedRoles = ['Dealer', 'Factory Manager', 'Operator', 'operator', 'manager', 'dealer'];
       
-      // Basic normalization check
       const normalizedRole = roleName.toLowerCase();
       const isAllowed = allowedRoles.some(r => r.toLowerCase() === normalizedRole);
 
@@ -51,7 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: userData._id,
         email: userData.email,
         name: userData.name,
-        role: roleName
+        role: roleName,
+        locationId: userData.locationId?._id || userData.locationId
       };
       
       setUser(authUser);
@@ -86,7 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: userData._id,
       email: userData.email,
       name: userData.name,
-      role: roleName
+      role: roleName,
+      locationId: userData.locationId
     };
 
     localStorage.setItem(TOKEN_KEY, token);
