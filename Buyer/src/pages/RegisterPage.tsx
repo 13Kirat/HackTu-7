@@ -25,7 +25,7 @@ export default function RegisterPage() {
     const result = await register({ name: form.name, email: form.email, password: form.password, company: form.company });
     setLoading(false);
     if (result.success) {
-      toast.success('Account created! Welcome to SupplyHub.');
+      toast.success('Account created! Welcome to FlowChain.');
       navigate('/', { replace: true });
     } else {
       toast.error(result.message);
@@ -48,7 +48,7 @@ export default function RegisterPage() {
             <Package className="h-6 w-6 text-primary-foreground" />
           </div>
           <h1 className="font-heading text-2xl font-bold">Create account</h1>
-          <p className="text-sm text-muted-foreground mt-1">Join SupplyHub to start ordering</p>
+          <p className="text-sm text-muted-foreground mt-1">Join FlowChain to start ordering</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">

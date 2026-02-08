@@ -42,7 +42,7 @@ export function AppSidebar() {
         </div>
         {!collapsed && (
           <span className="font-bold text-sidebar-accent-foreground text-sm tracking-tight">
-            SupplyChain
+            FlowChain
           </span>
         )}
       </div>

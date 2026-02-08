@@ -47,11 +47,11 @@ const Signup = () => {
           <div className="flex justify-center">
             <div className="flex items-center gap-2 mb-2">
               <Boxes className="h-8 w-8 text-primary" />
-              <span className="font-bold text-2xl text-foreground">SupplyHub</span>
+              <span className="font-bold text-2xl text-foreground">FlowChain</span>
             </div>
           </div>
           <CardTitle className="text-xl">Create your account</CardTitle>
-          <CardDescription>Get started with SupplyHub today</CardDescription>
+          <CardDescription>Get started with FlowChain today</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -29,17 +29,18 @@ const seedData = async () => {
 
     // 2. Create Company
     const company = await Company.create({
-      name: 'NexGen Supply Chain Solutions',
-      contactEmail: 'corp@nexgen.com',
-      address: '101 Tech Blvd, San Francisco, CA'
+      name: 'Modern Colors',
+      contactEmail: 'hello@moderncolors.com',
+      address: '101 Chroma Lane, Design District, NY',
+      phone: '+1 800-MOD-COLOR'
     });
-    console.log('Company created');
+    console.log('Company created: Modern Colors');
 
-    // 3. Create Roles with specific permissions
+    // 3. Create Roles
     const rolesData = [
       { 
         name: 'Company Admin', 
-        permissions: ['all'], 
+        permissions: ['admin'], 
         companyId: company._id, 
         isSystemRole: true 
       },
@@ -62,11 +63,6 @@ const seedData = async () => {
         name: 'Retailer', 
         permissions: ['create_order', 'view_products'], 
         companyId: company._id 
-      },
-      { 
-        name: 'Contractor', 
-        permissions: ['create_order', 'view_products'], 
-        companyId: company._id 
       }
     ];
     const roles = await Role.insertMany(rolesData);
@@ -77,53 +73,52 @@ const seedData = async () => {
     const dealerRole = roles.find(r => r.name === 'Dealer');
     const buyerRole = roles.find(r => r.name === 'Buyer');
     const retailerRole = roles.find(r => r.name === 'Retailer');
-    const contractorRole = roles.find(r => r.name === 'Contractor');
 
     // 4. Create Locations
     const factory = await Location.create({
-      name: 'Main Manufacturing Plant',
+      name: 'Modern Colors Main Plant',
       type: 'factory',
-      address: 'Industrial Zone East, SF',
+      address: 'Industrial Parkway, New Jersey',
       companyId: company._id,
-      coordinates: { lat: 37.7749, lng: -122.4194 }
+      coordinates: { lat: 40.7128, lng: -74.0060 }
     });
 
     const warehouse = await Location.create({
-      name: 'Regional Distribution Hub',
+      name: 'East Coast Distribution Center',
       type: 'warehouse',
-      address: 'Logistics Park South, SF',
+      address: 'Logistics Way, Pennsylvania',
       companyId: company._id,
-      coordinates: { lat: 37.7833, lng: -122.4167 }
+      coordinates: { lat: 39.9526, lng: -75.1652 }
     });
 
     const dealerLoc1 = await Location.create({
-      name: 'Elite Electronics Retail - North',
+      name: 'Downtown Decor & Paints',
       type: 'dealer',
-      address: 'Downtown Shopping Center, SF',
+      address: '5th Ave, Manhattan, NY',
       companyId: company._id,
-      coordinates: { lat: 37.7949, lng: -122.4094 }
+      coordinates: { lat: 40.7831, lng: -73.9712 }
     });
 
     const dealerLoc2 = await Location.create({
-        name: 'Elite Electronics Retail - South',
+        name: 'Suburban Color Hub',
         type: 'dealer',
-        address: 'Bayview District, SF',
+        address: 'Main St, Brooklyn, NY',
         companyId: company._id,
-        coordinates: { lat: 37.7349, lng: -122.3894 }
+        coordinates: { lat: 40.6782, lng: -73.9442 }
     });
     console.log('Locations created');
 
     // 5. Create Users
     const usersData = [
       {
-        name: 'System Admin',
+        name: 'Modern Admin',
         email: 'admin@example.com',
         password: 'password123',
         role: adminRole._id,
         companyId: company._id
       },
       {
-        name: 'John Factory',
+        name: 'Factory Supervisor',
         email: 'factory@example.com',
         password: 'password123',
         role: factoryRole._id,
@@ -131,7 +126,7 @@ const seedData = async () => {
         locationId: factory._id
       },
       {
-        name: 'David Dealer',
+        name: 'Elite Dealer',
         email: 'dealer@example.com',
         password: 'password123',
         role: dealerRole._id,
@@ -139,153 +134,147 @@ const seedData = async () => {
         locationId: dealerLoc1._id
       },
       {
-        name: 'Alice Buyer',
+        name: 'Alice Homeowner',
         email: 'buyer@example.com',
         password: 'password123',
         role: buyerRole._id,
         companyId: company._id,
-        address: 'Sunset District, SF',
-        coordinates: { lat: 37.7549, lng: -122.4794 } // Closer to dealerLoc1? Let's check.
+        address: 'Upper West Side, NY',
+        coordinates: { lat: 40.7870, lng: -73.9754 }
       },
       {
-        name: 'Bob Retailer',
+        name: 'Bob Retail Partner',
         email: 'retailer@example.com',
         password: 'password123',
         role: retailerRole._id,
         companyId: company._id,
-        address: 'Mission District, SF',
-        coordinates: { lat: 37.7599, lng: -122.4148 }
+        address: 'Queens, NY',
+        coordinates: { lat: 40.7282, lng: -73.7949 }
       }
     ];
 
-    // Note: User model has pre-save hook for password hashing
     for (const u of usersData) {
         await User.create(u);
     }
     console.log('Users created');
 
-    // 6. Create Products
+    // 6. Create Products (Paint Specific)
     const productsData = [
       { 
-        name: 'Ultra HD Monitor 32"', 
-        sku: 'MON-32-UHD', 
-        price: 499, 
-        costPrice: 250, 
+        name: 'Titanium White - Premium Emulsion', 
+        sku: 'MC-PW-001', 
+        price: 45, 
+        costPrice: 20, 
         companyId: company._id, 
-        category: 'Hardware',
-        schemes: ['Buy 5 Get 1 Free', '10% Dealer Margin']
+        category: 'Interior Paints',
+        schemes: ['Buy 10 Get 1 Gallon Free', 'Early Bird 5% Off'],
+        attributes: { finish: 'Silk', color: 'White', size: '5L' }
       },
       { 
-        name: 'Mechanical Keyboard RGB', 
-        sku: 'KB-RGB-MECH', 
-        price: 129, 
-        costPrice: 60, 
+        name: 'Midnight Blue - Weather Guard', 
+        sku: 'MC-EXT-002', 
+        price: 65, 
+        costPrice: 30, 
         companyId: company._id, 
-        category: 'Accessories',
-        schemes: ['Bundle with Mouse for 5% off']
+        category: 'Exterior Paints',
+        schemes: ['Bulk Discount 20+ units'],
+        attributes: { finish: 'Matte', color: 'Blue', size: '10L' }
       },
       { 
-        name: 'Wireless Pro Mouse', 
-        sku: 'MSE-WRLS-PRO', 
-        price: 89, 
-        costPrice: 40, 
+        name: 'Royal Gold - Metallic Series', 
+        sku: 'MC-MET-003', 
+        price: 120, 
+        costPrice: 55, 
         companyId: company._id, 
-        category: 'Accessories',
-        schemes: ['Bulk Discount 10+ units']
+        category: 'Specialty',
+        schemes: ['Festive Season 10% Off'],
+        attributes: { finish: 'Metallic', color: 'Gold', size: '1L' }
+      },
+      { 
+        name: 'Concrete Primer - Super Grip', 
+        sku: 'MC-PRM-004', 
+        price: 35, 
+        costPrice: 15, 
+        companyId: company._id, 
+        category: 'Primers',
+        attributes: { finish: 'Flat', color: 'Grey', size: '5L' }
       }
     ];
     const products = await Product.insertMany(productsData);
-    console.log('Products created');
+    console.log('Paint products created');
 
     // 7. Initialize Inventory
     const warehouseInventory = products.map(p => ({
       productId: p._id,
       locationId: warehouse._id,
       companyId: company._id,
-      totalStock: 200,
+      totalStock: 500,
       reservedStock: 0,
-      availableStock: 200,
-      reorderLevel: 50
+      availableStock: 500,
+      reorderLevel: 100
     }));
 
     const dealerInventory1 = products.map(p => ({
       productId: p._id,
       locationId: dealerLoc1._id,
       companyId: company._id,
-      totalStock: 50,
+      totalStock: 100,
       reservedStock: 0,
-      availableStock: 50,
-      reorderLevel: 20
-    }));
-
-    const dealerInventory2 = products.map(p => ({
-        productId: p._id,
-        locationId: dealerLoc2._id,
-        companyId: company._id,
-        totalStock: 75,
-        reservedStock: 0,
-        availableStock: 75,
-        reorderLevel: 25
+      availableStock: 100,
+      reorderLevel: 25
     }));
 
     const factoryInventory = products.map(p => ({
         productId: p._id,
         locationId: factory._id,
         companyId: company._id,
-        totalStock: 1000,
+        totalStock: 5000,
         reservedStock: 0,
-        availableStock: 1000,
-        reorderLevel: 100
+        availableStock: 5000,
+        reorderLevel: 500
     }));
 
-    await Inventory.insertMany([...factoryInventory, ...warehouseInventory, ...dealerInventory1, ...dealerInventory2]);
-    console.log('Inventory initialized across factory, warehouse, and dealers');
+    await Inventory.insertMany([...factoryInventory, ...warehouseInventory, ...dealerInventory1]);
+    console.log('Inventory initialized for Modern Colors network');
 
-    // 8. Create Sample Orders for analytics (last 30 days)
+    // 8. Create Sample Orders for analytics
     const Order = require('./src/models/Order');
     const ordersData = [];
     const now = new Date();
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 30; i++) {
         const orderDate = new Date();
-        orderDate.setDate(now.getDate() - Math.floor(Math.random() * 30));
+        orderDate.setDate(now.getDate() - Math.floor(Math.random() * 60));
         
         ordersData.push({
-            orderNumber: `SEED-ORD-${i}`,
+            orderNumber: `MC-ORD-${i}`,
             companyId: company._id,
             orderType: 'customer_order',
             customerId: buyerRole._id, 
             fromLocationId: dealerLoc1._id,
             items: [{
-                productId: products[i % 3]._id,
-                quantity: Math.floor(Math.random() * 10) + 1,
-                priceAtTime: products[i % 3].price
+                productId: products[i % 4]._id,
+                quantity: Math.floor(Math.random() * 5) + 1,
+                priceAtTime: products[i % 4].price
             }],
-            totalAmount: products[i % 3].price * 5,
+            totalAmount: products[i % 4].price * 2,
             status: 'delivered',
             createdAt: orderDate
         });
     }
     await Order.insertMany(ordersData);
-    console.log('Sample delivered orders created for analytics');
+    console.log('Sample paint orders created');
 
     // 9. Create a Coupon
     await Coupon.create({
-        code: 'WELCOME20',
+        code: 'MODERN20',
         companyId: company._id,
         discountType: 'percentage',
         discountValue: 20,
-        minOrderValue: 100,
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        minOrderValue: 200,
+        validUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
     });
     console.log('Coupons created');
-
-    console.log('--- SEEDING COMPLETE ---');
-    console.log('Logins:');
-    console.log('Admin: admin@example.com / password123');
-    console.log('Factory: factory@example.com / password123');
-    console.log('Dealer: dealer@example.com / password123');
-    console.log('Buyer: buyer@example.com / password123');
 
     process.exit();
   } catch (error) {

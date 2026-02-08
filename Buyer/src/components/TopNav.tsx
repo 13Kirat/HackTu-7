@@ -77,7 +77,7 @@ export default function TopNav() {
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <Package className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="hidden sm:inline">SupplyHub</span>
+          <span className="hidden sm:inline">FlowChain</span>
         </Link>
 
         {/* Search - Only on Catalog Page */}

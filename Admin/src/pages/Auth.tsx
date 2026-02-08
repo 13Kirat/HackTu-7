@@ -34,8 +34,8 @@ export default function AuthPage() {
           <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
             <Package className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">SupplyChain Admin</h1>
-          <p className="text-sm text-muted-foreground">Supply Chain Optimization Platform</p>
+          <h1 className="text-xl font-bold text-foreground">FlowChain Admin</h1>
+          <p className="text-sm text-muted-foreground">Where every product finds its perfect path.</p>
         </div>
 
         <Card>

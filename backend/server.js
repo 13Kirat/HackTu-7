@@ -46,7 +46,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('Supply Chain API v1 is running...');
+  res.send('FlowChain API v1 is running...');
 });
 
 // Error Handler

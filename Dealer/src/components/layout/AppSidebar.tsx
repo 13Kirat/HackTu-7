@@ -45,7 +45,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2">
           <Boxes className="h-7 w-7 text-sidebar-primary shrink-0" />
           <span className="font-bold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            SupplyHub
+            FlowChain
           </span>
         </div>
       </SidebarHeader>
