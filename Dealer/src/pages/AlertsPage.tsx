@@ -2,22 +2,38 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, TrendingUp, CheckCircle } from "lucide-react";
+import { AlertTriangle, TrendingUp, CheckCircle, Loader2 } from "lucide-react";
 import { alertService } from "@/services/alertService";
 import { toast } from "sonner";
 import type { Alert } from "@/types";
 
 const AlertsPage = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    alertService.getAlerts().then(setAlerts);
+    alertService.getAlerts()
+        .then(setAlerts)
+        .finally(() => setLoading(false));
   }, []);
 
-  const handleResolve = (id: string) => {
-    setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: "resolved" as const } : a));
-    toast.success("Alert resolved");
+  const handleResolve = async (id: string) => {
+    try {
+        await alertService.resolveAlert(id);
+        setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: "resolved" as const } : a));
+        toast.success("Alert resolved");
+    } catch (e) {
+        toast.error("Failed to resolve alert");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const active = alerts.filter(a => a.status === "active");
   const resolved = alerts.filter(a => a.status === "resolved");
@@ -28,6 +44,15 @@ const AlertsPage = () => {
         <h1 className="text-2xl font-bold tracking-tight">Alerts & Notifications</h1>
         <p className="text-muted-foreground">{active.length} active alerts require attention</p>
       </div>
+
+      {active.length === 0 && (
+          <Card className="shadow-sm">
+              <CardContent className="p-10 text-center text-muted-foreground">
+                  <CheckCircle className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                  <p>All alerts are resolved!</p>
+              </CardContent>
+          </Card>
+      )}
 
       <div className="space-y-3">
         {active.map(alert => (
@@ -49,9 +74,7 @@ const AlertsPage = () => {
                     </div>
                     <p className="text-sm text-muted-foreground">{alert.recommendedAction}</p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>Current Stock: <strong>{alert.currentStock}</strong></span>
-                      <span>Threshold: <strong>{alert.threshold}</strong></span>
-                      <span>{alert.createdAt}</span>
+                      <span>{new Date(alert.createdAt).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>

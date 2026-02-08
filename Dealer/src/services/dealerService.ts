@@ -1,10 +1,40 @@
-import { dealers, sales } from "@/mock/data";
+import api from "@/lib/api";
 import type { Dealer, Sale } from "@/types";
 
 export const dealerService = {
-  getDealers: (): Promise<Dealer[]> => Promise.resolve(dealers),
-  getDealerById: (id: string): Promise<Dealer | undefined> => Promise.resolve(dealers.find(d => d.id === id)),
-  getCurrentDealer: (): Promise<Dealer> => Promise.resolve(dealers[0]),
-  updateDealer: (dealer: Partial<Dealer>): Promise<Dealer> => Promise.resolve({ ...dealers[0], ...dealer }),
-  getSalesHistory: (): Promise<Sale[]> => Promise.resolve(sales),
+  getCurrentDealer: async (): Promise<Dealer> => {
+    const response = await api.get("/auth/profile");
+    const u = response.data;
+    return {
+      id: u._id,
+      name: u.name,
+      email: u.email,
+      location: u.address || "Unassigned",
+      phone: u.phone || ""
+    };
+  },
+  
+  updateProfile: async (data: Partial<Dealer>): Promise<Dealer> => {
+    // Backend expects address instead of location
+    const payload = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.location
+    };
+    const response = await api.put("/auth/profile", payload);
+    const u = response.data;
+    return {
+      id: u._id,
+      name: u.name,
+      email: u.email,
+      location: u.address || "Unassigned",
+      phone: u.phone || ""
+    };
+  },
+
+  getSalesHistory: async (): Promise<Sale[]> => {
+    // Placeholder for real API
+    return [];
+  },
 };
